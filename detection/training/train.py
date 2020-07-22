@@ -40,7 +40,7 @@ def main(hparams):
         gpus=1,
         checkpoint_callback=checkpoint_callback,
         early_stop_callback=stop_callback,
-        #accumulate_grad_batches=16,
+        #accumulate_grad_batches=4,
         #precision=16,
     )
 

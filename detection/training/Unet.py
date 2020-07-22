@@ -32,8 +32,8 @@ class Unet(pl.LightningModule):
         super(Unet, self).__init__()
         self.hparams = hparams
 
-        self.n_channels = hparams.n_channels
-        self.n_classes = hparams.n_classes
+        self.n_channels = 3#hparams.n_channels
+        self.n_classes = 6#hparams.n_classes
         self.bilinear = True
         self.cross_entropy_weights =torch.tensor([1,100, 100, 100, 100]).float().cuda()
 
@@ -129,7 +129,7 @@ class Unet(pl.LightningModule):
         return {'avg_val_loss': avg_loss, 'log': tensorboard_logs}
 
     def configure_optimizers(self):
-        return torch.optim.Adam(self.parameters(), lr=4e-4)
+        return torch.optim.Adam(self.parameters(), lr=1e-5)
 
     def __dataloader(self):
         dataset = self.hparams.dataset
@@ -139,8 +139,8 @@ class Unet(pl.LightningModule):
         n_train = len(dataset) - n_val
 
         train_ds, val_ds = random_split(dataset, [n_train, n_val])
-        train_loader = DataLoader(train_ds, batch_size=4,num_workers=8, pin_memory=True, shuffle=True)
-        val_loader = DataLoader(val_ds, batch_size=4,num_workers=8, pin_memory=True, shuffle=False)
+        train_loader = DataLoader(train_ds, batch_size=1,num_workers=8, pin_memory=True, shuffle=True)
+        val_loader = DataLoader(val_ds, batch_size=1,num_workers=8, pin_memory=True, shuffle=False)
 
         return {
             'train': train_loader,

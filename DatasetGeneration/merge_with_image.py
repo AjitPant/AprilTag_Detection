@@ -55,8 +55,8 @@ def app():
                                   rx_lim_deg=(-50, 50),
                                   ry_lim_deg=(-50, 50),
                                   rz_lim_deg=(-180, 180),
-                                  scalex_lim=(0.5, 2),
-                                  scaley_lim=(0.5, 2),
+                                  scalex_lim=(0.50, 2),
+                                  scaley_lim=(0.50, 2),
                                   )
 
     print(len(generator))
@@ -72,7 +72,7 @@ def app():
                 print("Failed to load the {}. Make sure it exists.", path)
                 exit()
 
-            img = cv2.resize(img, (256, 256))
+            img = cv2.resize(img, (512, 512))
             img_out, response_1, response_2 = overlayer(img)
 
             cv2.imwrite(os.path.join(args.out_folder, 'img', filename[:-4] + '.jpg'), img_out)

@@ -118,9 +118,6 @@ class ScaleAugmentation(object):
         scalex = np.random.uniform(self.scalex_lim[0], self.scalex_lim[1], 1)[0]
         scaley = np.random.uniform(self.scaley_lim[0], self.scaley_lim[1], 1)[0]
 
-        #Since deformation in apriltag is usually not expected
-        scaley = scalex
-
         dst_image = cv2.resize(src_image,dsize = None, fx= scalex, fy = scaley)
         dst_corners = src_corners
 

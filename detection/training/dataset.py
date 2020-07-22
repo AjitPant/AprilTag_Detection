@@ -18,7 +18,7 @@ class DirDataset(Dataset):
             self.ids = []
 
     def __len__(self):
-        return len(self.ids)
+        return min(1000, len(self.ids))
 
     def preprocess(self, img, mask=False):
         w, h = img.size

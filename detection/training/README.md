@@ -10,4 +10,3 @@
 2) train.py -> For training
 3) test.py -> for inference
 4) dataset.py -> Code for the dataloader
-5) corners\_to\_crop.py -> extracts the april tags from a image given the original image and the masks.
