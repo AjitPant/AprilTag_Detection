@@ -87,6 +87,6 @@ class backgroundOverlayer(object):
         # background_img[:,:,0] = cv2.equalizeHist(background_img[:,:,0]);
         # background_img[:,:,1] = cv2.equalizeHist(background_img[:,:,1]);
         # background_img[:,:,2] = cv2.equalizeHist(background_img[:,:,2]);
-        background_img = add_shadow(background_img, random.randrange(5))
+        background_img = add_shadow(background_img, random.randrange(2))
         background_img = add_noise(background_img, "gauss")
         return background_img, out_response, real_out_response

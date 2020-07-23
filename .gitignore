@@ -133,7 +133,15 @@ dmypy.json
 .vscode/
 
 #Custom stuff
-.png
-.jpg
-.pt
-.pth
+**/*.png
+**/*.jpg
+**/*.jpeg
+**/*.pt
+**/*.pth
+**/*.ckpt
+
+imgs
+img/
+mask/
+test
+lightning_logs

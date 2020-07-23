@@ -27,7 +27,7 @@ def main(hparams):
 
     checkpoint_callback = ModelCheckpoint(
         filepath=os.path.join(log_dir, 'checkpoints'),
-        save_top_k=5,
+        save_top_k=2,
         verbose=True,
     )
     stop_callback = EarlyStopping(
@@ -41,7 +41,8 @@ def main(hparams):
         checkpoint_callback=checkpoint_callback,
         early_stop_callback=stop_callback,
         #accumulate_grad_batches=4,
-        #precision=16,
+        amp_level='O2',
+        precision=16,
     )
 
     trainer.fit(model)

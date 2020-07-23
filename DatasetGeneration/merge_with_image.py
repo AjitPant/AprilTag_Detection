@@ -72,7 +72,7 @@ def app():
                 print("Failed to load the {}. Make sure it exists.", path)
                 exit()
 
-            img = cv2.resize(img, (512, 512))
+            img = cv2.resize(img, (256, 256))
             img_out, response_1, response_2 = overlayer(img)
 
             cv2.imwrite(os.path.join(args.out_folder, 'img', filename[:-4] + '.jpg'), img_out)
