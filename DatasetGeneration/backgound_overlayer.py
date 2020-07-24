@@ -52,16 +52,16 @@ class backgroundOverlayer(object):
 
 
             #Find light
-            background_img_view_lab = cv2.cvtColor(background_img_view, cv2.COLOR_BGR2LAB)
-            tag_img_view_lab = cv2.cvtColor(tag_img_masked, cv2.COLOR_BGR2LAB)
+            # background_img_view_lab = cv2.cvtColor(background_img_view, cv2.COLOR_BGR2LAB)
+            # tag_img_view_lab = cv2.cvtColor(tag_img_masked, cv2.COLOR_BGR2LAB)
 
-            light_background = background_img_view_lab[:,:,0].mean()
-            light_tag = tag_img_view_lab[:,:,0].sum() / np.count_nonzero(mask)
+            # light_background = background_img_view_lab[:,:,0].mean()
+            # light_tag = tag_img_view_lab[:,:,0].sum() / np.count_nonzero(mask)
 
-            w_light =  (( light_background/light_tag));
-            tag_img_view_lab[:, :, 0] = np.clip((tag_img_view_lab[:, :,0] * w_light), 0, 255);
+            # w_light =  (( light_background/light_tag));
+            # tag_img_view_lab[:, :, 0] = np.clip((tag_img_view_lab[:, :,0] * w_light), 0, 255);
 
-            tag_img_masked= cv2.cvtColor(tag_img_view_lab, cv2.COLOR_LAB2BGR)
+            # tag_img_masked= cv2.cvtColor(tag_img_view_lab, cv2.COLOR_LAB2BGR)
             background_img_view =  cv2.add(img_masked, tag_img_masked)
 
             #make sure no overlaps
@@ -71,13 +71,13 @@ class backgroundOverlayer(object):
             if not cv2.bitwise_and(out_response_view, mask).any():
 
 
-                blurred_background_img_view = cv2.GaussianBlur(background_img_view, (5, 5), 0)
+                # blurred_background_img_view = cv2.GaussianBlur(background_img_view, (5, 5), 0)
 
-                contours, hierarchy = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                # contours, hierarchy = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-                tmp_mask = np.zeros(background_img_view.shape, dtype = np.uint8)
-                cv2.drawContours(tmp_mask, contours, -1, (255,255, 255),5)
-                background_img_view = np.where(tmp_mask==np.array([255, 255, 255]), blurred_background_img_view, background_img_view)
+                # tmp_mask = np.zeros(background_img_view.shape, dtype = np.uint8)
+                # cv2.drawContours(tmp_mask, contours, -1, (255,255, 255),5)
+                #background_img_view = np.where(tmp_mask==np.array([255, 255, 255]), blurred_background_img_view, background_img_view)
 
                 background_img[y_offset:y_offset + height , x_offset:x_offset + width]     = background_img_view
                 out_response[y_offset:y_offset + height , x_offset:x_offset + width]       = cv2.bitwise_or(out_response_view, mask)
@@ -87,6 +87,6 @@ class backgroundOverlayer(object):
         # background_img[:,:,0] = cv2.equalizeHist(background_img[:,:,0]);
         # background_img[:,:,1] = cv2.equalizeHist(background_img[:,:,1]);
         # background_img[:,:,2] = cv2.equalizeHist(background_img[:,:,2]);
-        background_img = add_shadow(background_img, random.randrange(2))
-        background_img = add_noise(background_img, "gauss")
+        #background_img = add_shadow(background_img, random.randrange(2))
+        # background_img = add_noise(background_img, "gauss")
         return background_img, out_response, real_out_response

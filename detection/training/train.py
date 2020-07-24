@@ -41,8 +41,9 @@ def main(hparams):
         checkpoint_callback=checkpoint_callback,
         early_stop_callback=stop_callback,
         #accumulate_grad_batches=4,
-        amp_level='O2',
-        precision=16,
+        #gradient_clip_val=100,
+        #amp_level='O2',
+        #precision=16,
     )
 
     trainer.fit(model)
