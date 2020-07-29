@@ -11,11 +11,13 @@ def add_noise(image, noise_typ):
     if noise_typ == "gauss":
        row,col,ch= image.shape
        mean = 0
-       var = 0.1 * 255
+       var = 0.1 * 128
        sigma = var**0.5
        gauss = np.random.normal(mean,sigma,(row,col,ch))
        gauss = gauss.reshape(row,col,ch)
        noisy = image + gauss
+       noisy = np.clip(noisy, 0, 255);
+
        return noisy
     elif noise_typ == "s&p":
        row,col,ch = image.shape
@@ -51,7 +53,7 @@ def generate_shadow_coordinates(imshape, no_of_shadows=1):
         vertices_list=[]
         for index in range(no_of_shadows):
             vertex=[]
-            for dimensions in range(np.random.randint(3,15)): ## Dimensionality of the shadow polygon
+            for dimensions in range(np.random.randint(3,5)): ## Dimensionality of the shadow polygon
                 vertex.append(( imshape[1]*np.random.uniform(),imshape[0]*np.random.uniform()))
             vertices = np.array([vertex], dtype=np.int32) ## single shadow vertices
             vertices_list.append(vertices)

@@ -31,76 +31,77 @@ class Unet(pl.LightningModule):
     def __init__(self, hparams):
         super(Unet, self).__init__()
         self.hparams = hparams
-
+#
         self.n_channels = 3#hparams.n_channels
         self.n_classes = 6#hparams.n_classes
         self.bilinear = True
         self.cross_entropy_weights =torch.tensor([1,100, 100, 100, 100]).float().cuda()
-
-        self.base_model = models.resnet18(pretrained=True)
-
-        self.base_layers = list(self.base_model.children())
-
-        self.layer0 = nn.Sequential(*self.base_layers[:3]) # size=(N, 64, x.H/2, x.W/2)
+#
+        base_model = models.resnet18(pretrained=True)
+#
+        base_layers = list(base_model.children())
+#
+        self.layer0 = nn.Sequential(*base_layers[:3]) # size=(N, 64, x.H/2, x.W/2)
         self.layer0_1x1 = convrelu(64, 64, 1, 0)
-        self.layer1 = nn.Sequential(*self.base_layers[3:5]) # size=(N, 64, x.H/4, x.W/4)
+        self.layer1 = nn.Sequential(*base_layers[3:5]) # size=(N, 64, x.H/4, x.W/4)
         self.layer1_1x1 = convrelu(64, 64, 1, 0)
-        self.layer2 = self.base_layers[5]  # size=(N, 128, x.H/8, x.W/8)
+        self.layer2 = base_layers[5]  # size=(N, 128, x.H/8, x.W/8)
         self.layer2_1x1 = convrelu(128, 128, 1, 0)
-        self.layer3 = self.base_layers[6]  # size=(N, 256, x.H/16, x.W/16)
+        self.layer3 = base_layers[6]  # size=(N, 256, x.H/16, x.W/16)
         self.layer3_1x1 = convrelu(256, 256, 1, 0)
-        self.layer4 = self.base_layers[7]  # size=(N, 512, x.H/32, x.W/32)
+        self.layer4 = base_layers[7]  # size=(N, 512, x.H/32, x.W/32)
         self.layer4_1x1 = convrelu(512, 512,1, 0)
-
+#
         self.upsample = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
-
+#
         self.conv_up3 = convrelu(256 + 512, 512, 3, 1)
         self.conv_up2 = convrelu(128 + 512, 256, 3, 1)
         self.conv_up1 = convrelu(64 + 256, 256, 3, 1)
         self.conv_up0 = convrelu(64 + 256, 128, 3, 1)
-
+#
         self.conv_original_size0 = convrelu(3, 64, 3, 1)
         self.conv_original_size1 = convrelu(64, 64, 3, 1)
         self.conv_original_size2 = convrelu(64 + 128, 64, 3, 1)
-
+#
         self.conv_last = nn.Conv2d(64, self.n_classes, 1)
     def forward(self, input):
         x_original = self.conv_original_size0(input)
         x_original = self.conv_original_size1(x_original)
-
+#
         layer0 = self.layer0(input)
         layer1 = self.layer1(layer0)
         layer2 = self.layer2(layer1)
         layer3 = self.layer3(layer2)
         layer4 = self.layer4(layer3)
-
+#
         layer4 = self.layer4_1x1(layer4)
         x = self.upsample(layer4)
+#
         layer3 = self.layer3_1x1(layer3)
         x = torch.cat([x, layer3], dim=1)
         x = self.conv_up3(x)
-
+#
         x = self.upsample(x)
         layer2 = self.layer2_1x1(layer2)
         x = torch.cat([x, layer2], dim=1)
         x = self.conv_up2(x)
-
+#
         x = self.upsample(x)
         layer1 = self.layer1_1x1(layer1)
         x = torch.cat([x, layer1], dim=1)
         x = self.conv_up1(x)
-
+#
         x = self.upsample(x)
         layer0 = self.layer0_1x1(layer0)
         x = torch.cat([x, layer0], dim=1)
         x = self.conv_up0(x)
-
+#
         x = self.upsample(x)
         x = torch.cat([x, x_original], dim=1)
         x = self.conv_original_size2(x)
-
+#
         out = self.conv_last(x)
-
+#
         return out
 
 
@@ -117,7 +118,7 @@ class Unet(pl.LightningModule):
 #         super().__init__()
 #         self.conv = nn.Conv2d(in_channels, out_channels, padding=padding, kernel_size=kernel_size, stride=stride)
 #         self.bn = nn.BatchNorm2d(out_channels)
-#         self.relu = nn.ReLU()
+#         self.relu = nn.LeakyReLU()
 #         self.with_nonlinearity = with_nonlinearity
 
 #     def forward(self, x):
@@ -137,7 +138,7 @@ class Unet(pl.LightningModule):
 #         super().__init__()
 #         self.bridge = nn.Sequential(
 #             ConvBlock(in_channels, out_channels),
-#          #   ConvBlock(out_channels, out_channels)
+#             ConvBlock(out_channels, out_channels)
 #         )
 
 #     def forward(self, x):
@@ -162,7 +163,7 @@ class Unet(pl.LightningModule):
 #             self.upsample = nn.ConvTranspose2d(up_conv_in_channels, up_conv_out_channels, kernel_size=2, stride=2)
 #         elif upsampling_method == "bilinear":
 #             self.upsample = nn.Sequential(
-#                 nn.Upsample(mode='bilinear', scale_factor=2),
+#                 nn.Upsample(mode='bilinear', scale_factor=2, align_corners =True),
 #                 nn.Conv2d(up_conv_in_channels,up_conv_out_channels, kernel_size=1, stride=1)
 #             )
 #         self.conv_block_1 = ConvBlock(in_channels, out_channels)
@@ -197,6 +198,8 @@ class Unet(pl.LightningModule):
 #             if isinstance(bottleneck, nn.Sequential):
 #                 down_blocks.append(bottleneck)
 #         self.down_blocks = nn.ModuleList(down_blocks)
+#         for parameter in self.down_blocks:
+#             parameter.requires_grad = False;
 #     # for param in self.down_blocks.parameters():
 #         #     param.requires_grad = False
 #         #self.bridge = Bridge(2048, 2048)
@@ -230,13 +233,9 @@ class Unet(pl.LightningModule):
 #         for i, block in enumerate(self.up_blocks, 1):
 #             key = f"layer_{Unet.DEPTH - 1 - i}"
 #             x = block(x, pre_pools[key])
-#         output_feature_map = x
 #         x = self.out(x)
-#         del pre_pools
-#         if with_output_feature_map:
-#             return x, output_feature_map
-#         else:
-#             return x
+
+#         return x
 
 
     def training_step(self, batch, batch_nb):
@@ -244,8 +243,8 @@ class Unet(pl.LightningModule):
 
 
         y_hat = self.forward(x)
-        loss = F.cross_entropy(y_hat[:,:5,:,:], y[:,1,:,:].squeeze(1).long(), weight = self.cross_entropy_weights)
-        loss += F.binary_cross_entropy_with_logits(y_hat[:, 5,:,:], y[:,0,:,:].squeeze(1))
+        #loss = F.cross_entropy(y_hat[:,:5,:,:], y[:,1,:,:].squeeze(1).long(), weight = self.cross_entropy_weights)
+        loss = F.binary_cross_entropy_with_logits(y_hat[:, 5], y[:,0])
 
         tensorboard_logs = {'train_loss': loss}
         return {'loss': loss, 'log': tensorboard_logs}
@@ -255,8 +254,8 @@ class Unet(pl.LightningModule):
 
         y_hat = self.forward(x)
 
-        loss = F.cross_entropy(y_hat[:,:5,:,:], y[:,1,:,:].squeeze(1).long(), weight = self.cross_entropy_weights)
-        loss += F.binary_cross_entropy_with_logits(y_hat[:, 5,:,:], y[:,0,:,:].squeeze(1))
+        #loss = F.cross_entropy(y_hat[:,:5,:,:], y[:,1,:,:].squeeze(1).long(), weight = self.cross_entropy_weights)
+        loss = F.binary_cross_entropy_with_logits(y_hat[:, 5], y[:,0])
 
         return {'val_loss': loss}
 
@@ -276,8 +275,8 @@ class Unet(pl.LightningModule):
         n_train = len(dataset) - n_val
 
         train_ds, val_ds = random_split(dataset, [n_train, n_val])
-        train_loader = DataLoader(train_ds, batch_size=4,num_workers=8, pin_memory=True, shuffle=True)
-        val_loader = DataLoader(val_ds, batch_size=4,num_workers=8, pin_memory=True, shuffle=False)
+        train_loader = DataLoader(train_ds, batch_size=4,num_workers=4, pin_memory=True, shuffle=True)
+        val_loader = DataLoader(val_ds, batch_size=4,num_workers=4, pin_memory=True, shuffle=False)
 
         return {
             'train': train_loader,

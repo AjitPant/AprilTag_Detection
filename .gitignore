@@ -143,5 +143,6 @@ dmypy.json
 imgs
 img/
 mask/
+back/
 test
 lightning_logs

@@ -62,8 +62,9 @@ class AprilTagImages(object):
             hi = 0.9
         else:
             assert False, 'Unknown April tag family!'
-        return np.array([[lo, lo], [hi, lo], [hi, hi], [lo, hi]], dtype=np.float32)
+        return np.array([[[lo, lo], [hi, lo], [hi, hi], [lo, hi]],
+                         [[0.05, 0.05], [1-0.05, 0.05], [1-0.05, 1-0.05], [0.05, 1-0.05]]], dtype=np.float32)
 
     def image(self, idx):
-        assert idx < len(self.images), 'Not a valid index.'
-        return self.images[idx]
+                    assert idx < len(self.images), 'Not a valid index.'
+                    return self.images[idx]

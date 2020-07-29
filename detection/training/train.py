@@ -14,7 +14,7 @@ def main(hparams):
     model = Unet(hparams)
     if(hparams.checkpoint):
        model = Unet.load_from_checkpoint(hparams.checkpoint)
-
+    model.hparams.dataset = hparams.dataset
     model.train()
 
     os.makedirs(hparams.log_dir, exist_ok=True)
@@ -32,15 +32,16 @@ def main(hparams):
     )
     stop_callback = EarlyStopping(
         monitor='val_loss',
-        mode='auto',
-        patience=50,
+        mode='min',
+        patience=500,
         verbose=True,
+
     )
     trainer = Trainer(
         gpus=1,
         checkpoint_callback=checkpoint_callback,
         early_stop_callback=stop_callback,
-        #accumulate_grad_batches=4,
+
         #gradient_clip_val=100,
         #amp_level='O2',
         #precision=16,

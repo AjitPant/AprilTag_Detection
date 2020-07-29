@@ -39,7 +39,7 @@ def app():
     parser.add_argument(
         '--mx_tags',
         type=int,
-        default=10,
+        default=30,
         help='Maximum number of tags to generate in an image')
     args = parser.parse_args()
 
@@ -55,8 +55,8 @@ def app():
                                   rx_lim_deg=(-50, 50),
                                   ry_lim_deg=(-50, 50),
                                   rz_lim_deg=(-180, 180),
-                                  scalex_lim=(0.50, 2),
-                                  scaley_lim=(0.50, 2),
+                                  scalex_lim=(0.5, 5.0),
+                                  scaley_lim=(0.5, 5.0),
                                   )
 
     print(len(generator))
@@ -65,14 +65,14 @@ def app():
     i = 0
     for file in os.listdir(directory):
         filename = os.fsdecode(file)
-        if filename.endswith(".png") or filename.endswith(".jpg"):
+        if filename.endswith(".png") or filename.endswith(".jpg") or filename.endswith(".bmp"):
             path = (os.path.join(args.img_folder, filename))
             img = cv2.imread(path)
             if img is None:
                 print("Failed to load the {}. Make sure it exists.", path)
                 exit()
 
-            img = cv2.resize(img, (256, 256))
+            img = cv2.resize(img, (512, 512))
             img_out, response_1, response_2 = overlayer(img)
 
             cv2.imwrite(os.path.join(args.out_folder, 'img', filename[:-4] + '.jpg'), img_out)
@@ -80,7 +80,7 @@ def app():
             cv2.imwrite(os.path.join(args.out_folder, 'mask',  filename[:-4]  + '_2.png'), response_2)
 
         #Usually ~20000 images give good result
-        if(i==40000):
+        if(i==200):
             break
         i+=1
         print(i)

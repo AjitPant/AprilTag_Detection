@@ -15,7 +15,7 @@ from dataset import DirDataset
 from torch import nn
 from torchvision import datasets, models, transforms
 
-def predict(net, img, device='cpu', threshold=0.5):
+def predict(net, img, device='cpu', threshold=0.05):
     ds = DirDataset('', '')
     _img = (ds.preprocess(img))
 
@@ -50,7 +50,6 @@ def main(hparams):
     net.to(device)
     net.eval()
 
-
     #Load the identification network
     model_ft = models.resnet18(pretrained=True)
     num_ftrs = model_ft.fc.in_features
@@ -63,7 +62,9 @@ def main(hparams):
     identification_net.eval()
 
 
+
     img = Image.open(hparams.img)
+    img = img.resize((256, 256))
     mask, _mask = predict(net, img, device=device)
     mask = mask.argmax(axis = 0)
 

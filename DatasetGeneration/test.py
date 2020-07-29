@@ -34,7 +34,9 @@ def app():
                                   size=args.size,
                                   rx_lim_deg=(-50, 50),
                                   ry_lim_deg=(-50, 50),
-                                  rz_lim_deg=(-180, 180))
+                                  rz_lim_deg=(-180, 180),
+                                  scalex_lim=(1,1),
+                                  scaley_lim=(1,1))
     print(len(generator))
 
     for i in range(len(generator)):

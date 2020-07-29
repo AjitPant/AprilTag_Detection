@@ -12,21 +12,29 @@ def crop_to_corners(net, img, mask, device):
     mask_segmentation = mask[0]*255
     mask_corners = mask[1]
 
-    cv2.imshow("mask_segmentation", mask_segmentation)
+    print(mask_segmentation.shape)
+    print(mask_corners.shape)
+    print(mask_segmentation)
+    print(mask_corners)
+    cv2.namedWindow('mask_segmentation', cv2.WINDOW_NORMAL)
+    cv2.imshow(     "mask_segmentation", mask_segmentation)
+    cv2.namedWindow('mask_garbage', cv2.WINDOW_NORMAL)
     cv2.imshow("mask_garbage", mask_corners*30)
-    cv2.waitKey(0)
+
 
     kernel = np.ones((5,5),np.uint8)
-    contours, _= cv2.findContours(cv2.morphologyEx(mask_segmentation, cv2.MORPH_CLOSE, kernel), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+    contours, _= cv2.findContours(mask_segmentation, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
 
 
     coords = np.argwhere(mask_corners > 0)
 
     cv2.drawContours(img, contours, -1, (0,255,0), 3)
 
+    cv2.namedWindow('contours_img', cv2.WINDOW_NORMAL)
     cv2.imshow("contours_img", img)
     cv2.waitKey(0)
 
+    return
 
 
     for ind in range(len(contours)):
@@ -35,6 +43,7 @@ def crop_to_corners(net, img, mask, device):
 
         cv2.drawContours(internal_mask, contours, ind, 255, -1)
 
+        cv2.namedWindow('internal_mask', cv2.WINDOW_NORMAL)
         cv2.imshow("internal_mask", internal_mask)
         cv2.waitKey(0)
         internal_mask = cv2.bitwise_and(internal_mask, mask_corners)
@@ -55,6 +64,7 @@ def crop_to_corners(net, img, mask, device):
                     np.array(corner_list), np.array([[0, 0], [0, 224], [224, 224], [224, 0]]))
         height, width, channels = img.shape
         im1Reg = cv2.warpPerspective(img, h, (224, 224))
+        cv2.namedWindow('a', cv2.WINDOW_NORMAL)
         cv2.imshow('a', im1Reg)
         cv2.waitKey(0)
 

@@ -103,22 +103,30 @@ def precision(pred, target, n_classes = 5):
 
 def main(hparams):
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    net = Unet.load_from_checkpoint(hparams.checkpoint)
-    net.freeze()
-    net.to(device)
-    net.eval()
+    # net = Unet.load_from_checkpoint(hparams.checkpoint)
+    # net.freeze()
+    # net.to(device)
+    # net.eval()
 
     img_dir = os.path.join('./dataset', hparams.dataset, 'img')
     mask_dir = os.path.join('./dataset', hparams.dataset, 'mask')
 
     test_ds = DirDataset(img_dir, mask_dir)
 
-    test_loader = DataLoader(test_ds, batch_size=1,num_workers=8, pin_memory=True, shuffle=True)
+    test_loader = DataLoader(test_ds, batch_size=1,num_workers=8, pin_memory=True, shuffle=False)
 
-    ious = []
-    precisions = []
-    recalls = []
+    # ious = []
+    # precisions = []
+    # recalls = []
     for step, (img, masks) in enumerate(test_loader):   # gives batch data
+
+        if(masks[0,1,:,:].max()>=5):
+            print('found image'+ str(step))
+            cv2.imwrite("IasM.png", img.squeeze(1).cpu().numpy())
+            cv2.imwrite("IsasM.png", masks[0,1,:,:].cpu().numpy())
+            cv2.imwrite("IsadsM.png", masks[0,0,:,:].cpu().numpy())
+        print(step)
+        continue
 
         mask, _mask = predict(net, img, device=device)
         mask = mask.argmax(axis = 0)

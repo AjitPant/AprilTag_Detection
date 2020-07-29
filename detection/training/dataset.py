@@ -13,33 +13,39 @@ class DirDataset(Dataset):
         self.scale = scale
         print(self.img_dir)
         try:
-            self.ids = [s.split('.')[0] for s in os.listdir(self.img_dir)]
+            self.ids = (sorted([os.path.splitext(s)[0] for s in os.listdir(self.img_dir)]))
+            self.ids.reverse()
+
         except FileNotFoundError:
             self.ids = []
 
     def __len__(self):
-        return min(1000000, len(self.ids))
+        return min(20000, len(self.ids))
 
     def preprocess(self, img, mask=False):
-        w, h = img.size
-        _h = int(h * self.scale)
-        _w = int(w * self.scale)
+        # w, h = img.size
+        # _h = int(h * self.scale)
+        # _w = int(w * self.scale)
 
-        assert _w > 0
-        assert _h > 0
+        # assert _w > 0
+        # assert _h > 0
 
-        _img = img.resize((_w, _h))
-        _img = np.array(_img)
-        if len(_img.shape) == 2:
-            _img = np.expand_dims(_img, axis=(-1))
+        # _img = img.resize((_w, _h))
+        # _img = np.array(_img)
+        _img = img
+        # if len(_img.shape) == 2:
+        #     _img = np.expand_dims(_img, axis=(-1))
 
-        if _img.max()>1  and not mask:
-            _img = _img/255
+        # if _img.max()>1  and not mask:
+        #     _img = _img/255
 
         if not mask:
             trans = transforms.Compose([
+                transforms.ColorJitter(0.5,0.5, 0.5, 0.2 ),
+                transforms.RandomGrayscale(),
                 transforms.ToTensor(),
-                transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+                transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
+                #transforms.RandomErasing(p=0.5, scale=(0.02, 0.05), ratio=(0.3, 3.3), value=(0,0,0), inplace=False),
                 ])
             _img = trans(_img).float()
 
@@ -48,7 +54,7 @@ class DirDataset(Dataset):
     def __getitem__(self, i):
         idx = self.ids[i]
         img_files = glob.glob(os.path.join(self.img_dir, idx + '.*'))
-        mask_files = sorted(glob.glob(os.path.join(self.mask_dir, idx + '_*.*')))
+        mask_files = sorted(glob.glob(os.path.join(self.mask_dir, idx + '_?.*')))
 
         assert len(img_files) == 1, f"{idx}: {img_files}"
         assert len(mask_files) == 2, f"{idx}: {mask_files}"
