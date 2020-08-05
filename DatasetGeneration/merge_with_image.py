@@ -55,8 +55,8 @@ def app():
                                   rx_lim_deg=(-50, 50),
                                   ry_lim_deg=(-50, 50),
                                   rz_lim_deg=(-180, 180),
-                                  scalex_lim=(0.5, 5.0),
-                                  scaley_lim=(0.5, 5.0),
+                                  scalex_lim=(0.50, 5.0),
+                                  scaley_lim=(0.50, 5.0),
                                   )
 
     print(len(generator))
@@ -72,7 +72,7 @@ def app():
                 print("Failed to load the {}. Make sure it exists.", path)
                 exit()
 
-            img = cv2.resize(img, (512, 512))
+            img = cv2.resize(img, (256, 256))
             img_out, response_1, response_2 = overlayer(img)
 
             cv2.imwrite(os.path.join(args.out_folder, 'img', filename[:-4] + '.jpg'), img_out)
@@ -80,7 +80,7 @@ def app():
             cv2.imwrite(os.path.join(args.out_folder, 'mask',  filename[:-4]  + '_2.png'), response_2)
 
         #Usually ~20000 images give good result
-        if(i==200):
+        if(i==4000):
             break
         i+=1
         print(i)

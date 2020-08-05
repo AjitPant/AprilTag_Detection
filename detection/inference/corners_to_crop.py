@@ -16,6 +16,10 @@ def crop_to_corners(net, img, mask, device):
     print(mask_corners.shape)
     print(mask_segmentation)
     print(mask_corners)
+
+    kernel = np.ones((5,5), np.uint8)
+    # mask_segmentation = cv2.erode(mask_segmentation, kernel, iterations=1)
+    # mask_segmentation = cv2.dilate(mask_segmentation, kernel, iterations=1)
     cv2.namedWindow('mask_segmentation', cv2.WINDOW_NORMAL)
     cv2.imshow(     "mask_segmentation", mask_segmentation)
     cv2.namedWindow('mask_garbage', cv2.WINDOW_NORMAL)
@@ -26,15 +30,15 @@ def crop_to_corners(net, img, mask, device):
     contours, _= cv2.findContours(mask_segmentation, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
 
 
+    temp_img = img.copy();
     coords = np.argwhere(mask_corners > 0)
 
-    cv2.drawContours(img, contours, -1, (0,255,0), 3)
+    cv2.drawContours(temp_img, contours, -1, (0,255,0), 3)
 
     cv2.namedWindow('contours_img', cv2.WINDOW_NORMAL)
-    cv2.imshow("contours_img", img)
+    cv2.imshow("contours_img", temp_img)
     cv2.waitKey(0)
 
-    return
 
 
     for ind in range(len(contours)):
@@ -76,8 +80,8 @@ def crop_to_corners(net, img, mask, device):
 
         inp = torch.tensor(im1Reg).to(device).float()/255
         print(inp)
-        label = net(inp.T.unsqueeze(0)).argmax()
-        print(label)
+        # label = net(inp.T.unsqueeze(0)).argmax()
+        # print(label)
 
 
 

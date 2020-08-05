@@ -15,7 +15,7 @@ from dataset import DirDataset
 from torch import nn
 from torchvision import datasets, models, transforms
 
-def predict(net, img, device='cpu', threshold=0.05):
+def predict(net, img, device='cpu', threshold=0.5):
     ds = DirDataset('', '')
     _img = (ds.preprocess(img))
 

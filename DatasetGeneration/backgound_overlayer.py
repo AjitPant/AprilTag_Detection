@@ -3,7 +3,7 @@ import cv2
 import numpy as np
 import random
 import os
-from helper import add_noise, add_shadow
+from helper import add_noise, add_shadow, apply_motion_blur
 
 class backgroundOverlayer(object):
     """
@@ -17,7 +17,7 @@ class backgroundOverlayer(object):
     def __call__(self, background_img):
 
 
-        tags_to_overlay = random.randint(0, self.mx_tags)
+        tags_to_overlay = 50
         out_response = np.zeros(background_img.shape[:2], dtype = np.uint8)
         real_out_response = np.full(background_img.shape[:2],0, dtype = np.uint8)
 
@@ -47,7 +47,7 @@ class backgroundOverlayer(object):
             img_masked          = cv2.bitwise_and(background_img_view, background_img_view, mask=mask_inv)
 
             tag_img             = cv2.cvtColor(tag_img, cv2.COLOR_GRAY2BGR)
-            tag_img = np.clip(tag_img, random.randint(0,0)*10, 255)
+            tag_img = np.clip(tag_img, random.randint(0,10)*10, 255)
             tag_img_masked      = cv2.bitwise_and(tag_img, tag_img, mask = mask)
 
             #Find light
@@ -94,5 +94,15 @@ class backgroundOverlayer(object):
         # background_img[:,:,1] = cv2.equalizeHist(background_img[:,:,1]);
         # background_img[:,:,2] = cv2.equalizeHist(background_img[:,:,2]);
         #background_img = add_shadow(background_img, random.randrange(2))
-        #background_img = add_noise(background_img, "gauss")
+        if np.random.uniform(0, 1, 1)[0] > 0.5:
+            background_img = add_noise(background_img, "gauss")
+
+        # Motion blur
+        if np.random.uniform(0, 1, 1)[0] > 0.9:
+            size = np.random.randint(3, 15)
+            deg = np.random.randint(-180, 180)
+            background_img = apply_motion_blur(background_img, size, deg)
+
+
+
         return background_img, out_response, np.clip(real_out_response,0,4)
