@@ -62,9 +62,9 @@ def main(hparams):
     identification_net.eval()
 
 
-
+    im_size = 512//2
     img = Image.open(hparams.img)
-    img = img.resize((256, 256))
+    img = img.resize((im_size, im_size))
     mask, _mask = predict(net, img, device=device)
     mask = mask.argmax(axis = 0)
 

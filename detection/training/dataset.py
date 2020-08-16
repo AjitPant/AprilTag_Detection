@@ -21,24 +21,9 @@ class DirDataset(Dataset):
             self.ids = []
 
     def __len__(self):
-        return min(5000, len(self.ids))
+        return min(8000, len(self.ids))
 
     def preprocess(self, img, mask=False):
-        # w, h = img.size
-        # _h = int(h * self.scale)
-        # _w = int(w * self.scale)
-
-        # assert _w > 0
-        # assert _h > 0
-
-        # _img = img.resize((_w, _h))
-        # _img = np.array(_img)
-        _img = img
-        # if len(_img.shape) == 2:
-        #     _img = np.expand_dims(_img, axis=(-1))
-
-        # if _img.max()>1  and not mask:
-        #     _img = _img/255
 
         if not mask:
             trans = transforms.Compose([
@@ -46,13 +31,13 @@ class DirDataset(Dataset):
                 transforms.RandomGrayscale(),
                 transforms.ToTensor(),
                 transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
-                # transforms.RandomErasing(p=0.5, scale=(0.02, 0.05), ratio=(0.3, 3.3), value=(0,0,0), inplace=False),
+                # transforms.RandomErasing(p=0.5, scale=(0.02, 0.1), ratio=(0.3, 3.3), value=(0,0,0), inplace=True),
                 ])
 
 
-            _img = trans(_img).float()
+            img = trans(img).float()
 
-        return _img
+        return img
 
     def __getitem__(self, i):
         idx = self.ids[i]

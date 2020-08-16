@@ -21,88 +21,50 @@ import torch
 from torchvision import transforms, datasets, models
 
 
-# def convrelu(in_channels, out_channels, kernel, padding):
-#     return nn.Sequential(
-#         nn.Conv2d(in_channels, out_channels, kernel, padding=padding),
-#         nn.BatchNorm2d(out_channels),
-#         nn.LeakyReLU(inplace=True),
-#     )
-# class Unet(pl.LightningModule):
-#     def __init__(self, hparams):
-#         super(Unet, self).__init__()
-#         self.hparams = hparams
-# #
-#         self.n_channels = 3#hparams.n_channels
-#         self.n_classes = 6#hparams.n_classes
-#         self.bilinear = True
-#         self.cross_entropy_weights =torch.tensor([1,100, 100, 100, 100]).float().cuda()
-# #
-#         base_model = models.resnet18(pretrained=True)
-# #
-#         base_layers = list(base_model.children())
-# #
-#         self.layer0 = nn.Sequential(*base_layers[:3]) # size=(N, 64, x.H/2, x.W/2)
-#         self.layer0_1x1 = convrelu(64, 64, 1, 0)
-#         self.layer1 = nn.Sequential(*base_layers[3:5]) # size=(N, 64, x.H/4, x.W/4)
-#         self.layer1_1x1 = convrelu(64, 64, 1, 0)
-#         self.layer2 = base_layers[5]  # size=(N, 128, x.H/8, x.W/8)
-#         self.layer2_1x1 = convrelu(128, 128, 1, 0)
-#         self.layer3 = base_layers[6]  # size=(N, 256, x.H/16, x.W/16)
-#         self.layer3_1x1 = convrelu(256, 256, 1, 0)
-#         self.layer4 = base_layers[7]  # size=(N, 512, x.H/32, x.W/32)
-#         self.layer4_1x1 = convrelu(512, 512,1, 0)
-# #
-#         self.upsample = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
-# #
-#         self.conv_up3 = convrelu(256 + 512, 512, 3, 1)
-#         self.conv_up2 = convrelu(128 + 512, 256, 3, 1)
-#         self.conv_up1 = convrelu(64 + 256, 256, 3, 1)
-#         self.conv_up0 = convrelu(64 + 256, 128, 3, 1)
-# #
-#         self.conv_original_size0 = convrelu(3, 64, 3, 1)
-#         self.conv_original_size1 = convrelu(64, 64, 3, 1)
-#         self.conv_original_size2 = convrelu(64 + 128, 64, 3, 1)
-# #
-#         self.conv_last = nn.Conv2d(64, self.n_classes, 1)
-#     def forward(self, input):
-#         x_original = self.conv_original_size0(input)
-#         x_original = self.conv_original_size1(x_original)
-# #
-#         layer0 = self.layer0(input)
-#         layer1 = self.layer1(layer0)
-#         layer2 = self.layer2(layer1)
-#         layer3 = self.layer3(layer2)
-#         layer4 = self.layer4(layer3)
-# #
-#         layer4 = self.layer4_1x1(layer4)
-#         x = self.upsample(layer4)
-# #
-#         layer3 = self.layer3_1x1(layer3)
-#         x = torch.cat([x, layer3], dim=1)
-#         x = self.conv_up3(x)
-# #
-#         x = self.upsample(x)
-#         layer2 = self.layer2_1x1(layer2)
-#         x = torch.cat([x, layer2], dim=1)
-#         x = self.conv_up2(x)
-# #
-#         x = self.upsample(x)
-#         layer1 = self.layer1_1x1(layer1)
-#         x = torch.cat([x, layer1], dim=1)
-#         x = self.conv_up1(x)
-# #
-#         x = self.upsample(x)
-#         layer0 = self.layer0_1x1(layer0)
-#         x = torch.cat([x, layer0], dim=1)
-#         x = self.conv_up0(x)
-# #
-#         x = self.upsample(x)
-#         x = torch.cat([x, x_original], dim=1)
-#         x = self.conv_original_size2(x)
-# #
-#         out = self.conv_last(x)
-# #
-#         return out
+def dice_loss(input, target):
+    input = torch.sigmoid(input)
+    smooth = 1.0
+
+
+    iflat = input.view(-1)
+    tflat = target.view(-1)
+    intersection = (iflat * tflat).sum()
+
+    return ((2.0 * intersection + smooth) / (iflat.sum() + tflat.sum() + smooth))
+
+
+class FocalLoss(nn.Module):
+    def __init__(self, gamma):
+        super().__init__()
+        self.gamma = gamma
+
+    def forward(self, input, target):
+        if not (target.size() == input.size()):
+            raise ValueError("Target size ({}) must be the same as input size ({})"
+                             .format(target.size(), input.size()))
+
+        max_val = (-input).clamp(min=0)
+        loss = input - input * target + max_val + \
+            ((-max_val).exp() + (-input - max_val).exp()).log()
+
+        invprobs = F.logsigmoid(-input * (target * 2.0 - 1.0))
+        loss = (invprobs * self.gamma).exp() * loss
+
+        return loss.mean()
+
+
+
+class MixedLoss(nn.Module):
+    def __init__(self, alpha, gamma):
+        super().__init__()
+        self.alpha = alpha
+        self.focal = FocalLoss(gamma)
+
+    def forward(self, input, target):
+        # print(self.focal(input, target))
+        # print(torch.log(dice_loss(input, target)))
+        loss = self.alpha*self.focal(input, target) - torch.log(dice_loss(input, target))
+        return loss.mean()
 
 
 import torchvision
@@ -188,7 +150,8 @@ class Unet(pl.LightningModule):
     def __init__(self, hparams):
         super().__init__()
         self.hparams = hparams
-        self.cross_entropy_weights =torch.tensor([1,1000, 1000, 1000, 1000],dtype = torch.float32, device = torch.device('cuda:0'))
+        self.loss_func = MixedLoss(10.0, 2.0);
+        self.cross_entropy_weights =torch.tensor([1,100, 100, 100, 100],dtype = torch.float32, device = torch.device('cuda:0'))
         resnet = torchvision.models.resnet.resnet50(pretrained=True)
         down_blocks = []
         up_blocks = []
@@ -237,10 +200,20 @@ class Unet(pl.LightningModule):
 
 
         y_hat = self.forward(x)
-        loss = F.cross_entropy(y_hat[:,:5], y[:,1].squeeze(1).long(), weight = self.cross_entropy_weights)
-        loss += F.binary_cross_entropy_with_logits(y_hat[:, 5], y[:,0])
+        # loss = F.cross_entropy(y_hat[:,:5], y[:,1].squeeze(1).long(), weight = self.cross_entropy_weights)
 
-        tensorboard_logs = {'train_loss': loss}
+        loss = torch.zeros(1)
+
+        for batch in range(y_hat.shape[0]):
+            for i in range(5):
+
+                loss += self.loss_func(y_hat[batch,i], y[batch,1] == i)
+        corner_loss = loss.clone()
+        # loss += F.binary_cross_entropy_with_logits(y_hat[:, 5], y[:,0])
+        for batch in range(y_hat.shape[0]):
+            loss += self.loss_func(y_hat[batch,5], y[batch,0])
+
+        tensorboard_logs = {'train_loss': loss, 'train_corner_loss' : corner_loss}
         return {'loss': loss, 'log': tensorboard_logs}
 
     def validation_step(self, batch, batch_nb):
@@ -248,30 +221,40 @@ class Unet(pl.LightningModule):
 
         y_hat = self.forward(x)
 
-        loss = F.cross_entropy(y_hat[:,:5], y[:,1].squeeze(1).long(), weight = self.cross_entropy_weights)
-        loss += F.binary_cross_entropy_with_logits(y_hat[:, 5], y[:,0])
+        # loss = F.cross_entropy(y_hat[:,:5], y[:,1].squeeze(1).long(), weight = self.cross_entropy_weights)
+        loss = torch.zeros(1)
+        for batch in range(y_hat.shape[0]):
+            for i in range(5):
 
-        return {'val_loss': loss}
+                loss += self.loss_func(y_hat[batch,i], y[batch,1] == i)
+        corner_loss = loss.clone()
+        for batch in range(y_hat.shape[0]):
+            loss += self.loss_func(y_hat[batch,5], y[batch,0])
+        # loss += F.binary_cross_entropy_with_logits(y_hat[:, 5], y[:,0])
+
+        return {'val_loss': loss, 'val_corner_loss' : corner_loss}
 
     def validation_end(self, outputs):
         avg_loss = torch.stack([x['val_loss'] for x in outputs]).mean()
-        tensorboard_logs = {'val_loss': avg_loss}
-        return {'avg_val_loss': avg_loss, 'log': tensorboard_logs}
+        avg_corner_loss = torch.stack([x['val_corner_loss'] for x in outputs]).mean()
+        tensorboard_logs = {'val_loss': avg_loss, 'val_corner_loss': avg_corner_loss}
+        return {'val_loss': avg_loss, 'log': tensorboard_logs}
 
     def configure_optimizers(self):
-        return torch.optim.Adam(self.parameters(), lr=3e-5)
+        optimizer = torch.optim.Adam(self.parameters(), lr=3e-3)
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor = 0.3, patience = 3)
+        return [optimizer] , [scheduler]
 
     def __dataloader(self):
         dataset = self.hparams.dataset
-        torch.manual_seed(42)
         dataset = DirDataset(f'./dataset/{dataset}/img', f'./dataset/{dataset}/mask')
 
         n_val = int(len(dataset) * 0.1)
         n_train = len(dataset) - n_val
 
-        train_ds, val_ds = random_split(dataset, [n_train, n_val])
-        train_loader = DataLoader(train_ds, batch_size=self.hparams.batch_size,num_workers=4, pin_memory=True, shuffle=True)
-        val_loader = DataLoader(val_ds, batch_size=self.hparams.batch_size,num_workers=4, pin_memory=True, shuffle=False)
+        train_ds, val_ds = random_split(dataset, [n_train, n_val], generator=torch.Generator().manual_seed(47))
+        train_loader = DataLoader(train_ds, batch_size=4,num_workers=4, pin_memory=True, shuffle=True)
+        val_loader = DataLoader(val_ds, batch_size=4,num_workers=4, pin_memory=True, shuffle=False)
 
         return {
             'train': train_loader,
@@ -283,6 +266,7 @@ class Unet(pl.LightningModule):
 
     def val_dataloader(self):
         return self.__dataloader()['val']
+
 
     @staticmethod
     def add_model_specific_args(parent_parser):

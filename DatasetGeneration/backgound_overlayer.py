@@ -3,7 +3,7 @@ import cv2
 import numpy as np
 import random
 import os
-from helper import add_noise, add_shadow, apply_motion_blur
+from helper import add_noise, add_shadow, apply_motion_blur, add_spot_light, add_parallel_light
 
 class backgroundOverlayer(object):
     """
@@ -51,7 +51,7 @@ class backgroundOverlayer(object):
             tag_img_masked      = cv2.bitwise_and(tag_img, tag_img, mask = mask)
 
             #Find light
-            if np.random.uniform(0, 1, 1)[0] > 0.5:
+            if np.random.uniform(0, 1, 1)[0] > 0.7:
 
                 background_img_view_lab = cv2.cvtColor(background_img_view, cv2.COLOR_BGR2LAB)
                 tag_img_view_lab = cv2.cvtColor(tag_img_masked, cv2.COLOR_BGR2LAB)
@@ -77,29 +77,47 @@ class backgroundOverlayer(object):
             if not cv2.bitwise_and(out_response_view, mask).any():
 
 
-                # blurred_background_img_view = cv2.GaussianBlur(background_img_view, (5, 5), 0)
-
-                # contours, hierarchy = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
-                # tmp_mask = np.zeros(background_img_view.shape, dtype = np.uint8)
-                # cv2.drawContours(tmp_mask, contours, -1, (255,255, 255),5)
-                # background_img_view = np.where(tmp_mask==np.array([255, 255, 255]), blurred_background_img_view, background_img_view)
+                if np.random.uniform(0, 1, 1)[0] > 0.8:
+                    blurred_background_img_view = cv2.GaussianBlur(background_img_view, (5, 5), 0)
+                    contours, hierarchy = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                    tmp_mask = np.zeros(background_img_view.shape, dtype = np.uint8)
+                    cv2.drawContours(tmp_mask, contours, -1, (255,255, 255),5)
+                    background_img_view = np.where(tmp_mask==np.array([255, 255, 255]), blurred_background_img_view, background_img_view)
 
                 background_img[y_offset:y_offset + height , x_offset:x_offset + width]     = background_img_view
                 out_response[y_offset:y_offset + height , x_offset:x_offset + width]       = cv2.bitwise_or(out_response_view, mask)
                 real_out_response[y_offset:y_offset + height , x_offset:x_offset + width] += 4- np.array(response.argmax(axis = 2), dtype = np.uint8)
 
 
-        # background_img[:,:,0] = cv2.equalizeHist(background_img[:,:,0]);
-        # background_img[:,:,1] = cv2.equalizeHist(background_img[:,:,1]);
-        # background_img[:,:,2] = cv2.equalizeHist(background_img[:,:,2]);
-        #background_img = add_shadow(background_img, random.randrange(2))
+
+        if np.random.uniform(0, 1, 1)[0] > 0.8:
+            background_img[:,:,0] = cv2.equalizeHist(background_img[:,:,0]);
+            background_img[:,:,1] = cv2.equalizeHist(background_img[:,:,1]);
+            background_img[:,:,2] = cv2.equalizeHist(background_img[:,:,2]);
+
+        if np.random.uniform(0, 1, 1)[0] > 0.7:
+            background_img = add_shadow(background_img, random.randrange(6))
+
+        if np.random.uniform(0, 1, 1)[0] > 0.7:
+            background_img = add_spot_light(background_img)
+
+
+        if np.random.uniform(0, 1, 1)[0] > 0.7:
+            background_img = add_parallel_light(background_img)
+
+
         if np.random.uniform(0, 1, 1)[0] > 0.5:
             background_img = add_noise(background_img, "gauss")
 
+        if np.random.uniform(0, 1, 1)[0] > 0.5:
+            background_img = add_noise(background_img, "s&p")
+
+        if np.random.uniform(0, 1, 1)[0] > 0.7:
+            background_img = add_noise(background_img, "speckle")
+
         # Motion blur
-        if np.random.uniform(0, 1, 1)[0] > 0.9:
-            size = np.random.randint(3, 15)
+        if np.random.uniform(0, 1, 1)[0] > 0.8:
+            size = np.random.randint(3, 11)
             deg = np.random.randint(-180, 180)
             background_img = apply_motion_blur(background_img, size, deg)
 

@@ -6,8 +6,37 @@ from apriltag_images import TAG36h11, AprilTagImages
 from apriltag_generator import AprilTagGenerator
 from backgound_overlayer import backgroundOverlayer
 
+from multiprocessing import Pool
+from multiprocessing import freeze_support
+import itertools
+
+import copy
 import os
 import random
+import time
+
+def augment_and_save(file, overlayer, args):
+    filename = os.fsdecode(file)
+    if filename.endswith(".png") or filename.endswith(".jpg") or filename.endswith(".bmp"):
+        path = (os.path.join(args.img_folder, filename))
+        for j in range(1):
+            img = cv2.imread(path)
+            if img is None:
+                print("Failed to load the {}. Make sure it exists.", path)
+                exit()
+
+            img = cv2.resize(img, (256, 256))
+            img_out, response_1, response_2 = overlayer(img)
+
+            cv2.imwrite(os.path.join(args.out_folder, 'img', filename[:-4] + "_" + str(j) + '.jpg'), img_out)
+            cv2.imwrite(os.path.join(args.out_folder, 'mask',  filename[:-4] + "_" + str(j) + '_1.png'), response_1)
+            cv2.imwrite(os.path.join(args.out_folder, 'mask',  filename[:-4] + "_" + str(j) + '_2.png'), response_2)
+
+
+def run_multiprocessing(func, file_list, overlayer, args, n_processors):
+    parameters = ((file, overlayer, args ) for file in file_list)
+    with Pool(processes=n_processors) as pool:
+        return pool.starmap(func, parameters)
 
 def app():
     parser = argparse.ArgumentParser(description='April tag image Generator.')
@@ -48,42 +77,36 @@ def app():
 
 
 
-
     generator = AprilTagGenerator(root=args.root,
                                   family=args.family,
                                   size=args.size,
                                   rx_lim_deg=(-50, 50),
                                   ry_lim_deg=(-50, 50),
                                   rz_lim_deg=(-180, 180),
-                                  scalex_lim=(0.50, 5.0),
-                                  scaley_lim=(0.50, 5.0),
+                                  scalex_lim=(0.70, 5.0),
+                                  scaley_lim=(0.70, 5.0),
                                   )
 
     print(len(generator))
     overlayer = backgroundOverlayer(generator, args.mx_tags)
     directory = os.fsencode(args.img_folder)
     i = 0
-    for file in os.listdir(directory):
-        filename = os.fsdecode(file)
-        if filename.endswith(".png") or filename.endswith(".jpg") or filename.endswith(".bmp"):
-            path = (os.path.join(args.img_folder, filename))
-            img = cv2.imread(path)
-            if img is None:
-                print("Failed to load the {}. Make sure it exists.", path)
-                exit()
 
-            img = cv2.resize(img, (256, 256))
-            img_out, response_1, response_2 = overlayer(img)
+    n_processors = 10
 
-            cv2.imwrite(os.path.join(args.out_folder, 'img', filename[:-4] + '.jpg'), img_out)
-            cv2.imwrite(os.path.join(args.out_folder, 'mask',  filename[:-4]  + '_1.png'), response_1)
-            cv2.imwrite(os.path.join(args.out_folder, 'mask',  filename[:-4]  + '_2.png'), response_2)
+    mx_files = 8000
 
-        #Usually ~20000 images give good result
-        if(i==4000):
-            break
-        i+=1
-        print(i)
+    file_list = sorted(list(os.listdir(directory))[:mx_files])
+
+    '''
+    pass the task function, followed by the parameters to processors
+    '''
+    start = time.time()
+    out = run_multiprocessing(augment_and_save, file_list, overlayer, args, n_processors)
+    print("Mutiprocessing time: {}secs\n".format((time.time()-start)))
+
+
 
 if __name__ == "__main__":
+    freeze_support()   # required to use multiprocessing
     app()

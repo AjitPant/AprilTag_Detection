@@ -23,7 +23,15 @@ def crop_to_corners(net, img, mask, device):
     cv2.namedWindow('mask_segmentation', cv2.WINDOW_NORMAL)
     cv2.imshow(     "mask_segmentation", mask_segmentation)
     cv2.namedWindow('mask_garbage', cv2.WINDOW_NORMAL)
-    cv2.imshow("mask_garbage", mask_corners*30)
+
+
+    # Divide into four masks and then compute for drawing only
+    mask_corners_list = []
+    for i in range(1, 5):
+        mask_corners_list.append(mask_corners == i)
+        
+
+    cv2.imshow("mask_garbage", mask_corners*60)
 
 
     kernel = np.ones((5,5),np.uint8)
