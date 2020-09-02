@@ -161,9 +161,10 @@ def add_spot_light(image, light_position=None, max_brightness=255, min_brightnes
     Add mask generated from spot light to given image
     """
     if transparency is None:
-        transparency = random.uniform(0.9, 0.95)
+        transparency = random.uniform(0.5, 0.85)
     frame = image
     height, width, _ = frame.shape
+    frame = cv2.cvtColor(frame, cv2.COLOR_GRAY2BGR)
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
     mask = generate_spot_light_mask(mask_size=(width, height),
                                     position=light_position,
@@ -173,6 +174,7 @@ def add_spot_light(image, light_position=None, max_brightness=255, min_brightnes
                                     linear_decay_rate=linear_decay_rate)
     hsv[:, :, 2] = hsv[:, :, 2] * transparency + mask * (1 - transparency)
     frame = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)
+    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     frame[frame > 255] = 255
     frame = np.asarray(frame, dtype=np.uint8)
     return frame
@@ -271,9 +273,10 @@ def add_parallel_light(image, light_position=None, direction=None, max_brightnes
     Add mask generated from parallel light to given image
     """
     if transparency is None:
-        transparency = random.uniform(0.8, 0.85)
+        transparency = random.uniform(0.5, 0.85)
     frame = image
     height, width, _ = frame.shape
+    frame = cv2.cvtColor(frame, cv2.COLOR_GRAY2BGR)
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
     mask = generate_parallel_light_mask(mask_size=(width, height),
                                         position=light_position,
@@ -284,6 +287,7 @@ def add_parallel_light(image, light_position=None, direction=None, max_brightnes
                                         linear_decay_rate=linear_decay_rate)
     hsv[:, :, 2] = hsv[:, :, 2] * transparency + mask * (1 - transparency)
     frame = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)
+    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     frame[frame > 255] = 255
     frame = np.asarray(frame, dtype=np.uint8)
     return frame

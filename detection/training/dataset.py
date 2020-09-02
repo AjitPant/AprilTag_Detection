@@ -31,7 +31,7 @@ class DirDataset(Dataset):
                 transforms.ColorJitter(0.3,0.3, 0.3, 0.1 ),
                 transforms.ToTensor(),
                 transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
-                transforms.RandomErasing(p=0.5, scale=(0.001, 0.01), ratio=(0.3, 3.3), value=(0,0,0), inplace=True),
+                # transforms.RandomErasing(p=0.5, scale=(0.001, 0.01), ratio=(0.3, 3.3), value=(0,0,0), inplace=True),
                 ])
 
 

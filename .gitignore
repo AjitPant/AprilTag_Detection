@@ -133,9 +133,11 @@ dmypy.json
 .vscode/
 
 #Custom stuff
+**/*.whl
 **/*.png
 **/*.jpg
 **/*.jpeg
+**/*.txt
 **/*.pt
 **/*.pth
 **/*.ckpt
