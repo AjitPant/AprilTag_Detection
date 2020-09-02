@@ -40,6 +40,7 @@ def app():
     print(len(generator))
 
     for i in range(len(generator)):
+        i = 40
         result = generator[i]
 
         cv2.namedWindow("image", cv2.WINDOW_NORMAL)

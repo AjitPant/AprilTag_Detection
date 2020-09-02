@@ -67,7 +67,7 @@ def app():
                     col /= img.shape[1]
                     for r in range(max(0, int(row)-padding), min(shape[1], int(row)+padding)):
                         for c in range(max(0, int(col)-padding), min(shape[0], int(col)+padding)):
-                            mask[r][c] = 255#ind+1
+                            mask[r][c] = ind+1
 
             # for corners in rejectedCandidates:
             #     corners = corners[0]

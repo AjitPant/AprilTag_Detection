@@ -140,8 +140,17 @@ dmypy.json
 **/*.pth
 **/*.ckpt
 
+**/back
+**/model_nightly
 imgs
 img/
+im_bet/
+img_better/
+model_nightly/
+models/
+img/
+dataset/
+mask/
 mask/
 back/
 test

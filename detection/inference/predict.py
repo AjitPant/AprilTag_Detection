@@ -27,10 +27,14 @@ def predict(net, img, device='cpu', threshold=0.5):
         _o = o[:, 5, :, :]
         o = o[:, :5,:,:]
 
-        probs = torch.nn.functional.softmax(o, dim=1)
+        # probs = torch.nn.functional.softmax(o, dim=1)
+        print(o.shape)
+        probs = torch.sigmoid(o)
+        print(o.max())
+        print(probs.shape)
         probs = probs.squeeze(0)
         probs = probs.cpu()
-        mask = probs.squeeze().cpu().numpy()
+        mask = probs.cpu().numpy()
 
         _probs = torch.sigmoid(_o)
         _probs = _probs.squeeze(0)
@@ -62,17 +66,17 @@ def main(hparams):
     identification_net.eval()
 
 
-    im_size = 512//2
+    im_size = 512
     img = Image.open(hparams.img)
     img = img.resize((im_size, im_size))
     mask, _mask = predict(net, img, device=device)
-    mask = mask.argmax(axis = 0)
+    # mask = 4 - mask.argmax(axis = 0);
 
     img = np.array(img)
 
     print(img.dtype)
 
-    mask = mask.astype(np.uint8)
+    # mask = mask.astype(np.uint8)
     _mask = _mask.astype(np.uint8)
     crop_to_corners(identification_net, img, [_mask, mask], device)
 

@@ -6,6 +6,7 @@ from apriltag_images import TAG36h11, AprilTagImages
 from apriltag_generator import AprilTagGenerator
 from backgound_overlayer import backgroundOverlayer
 
+import multiprocessing
 from multiprocessing import Pool
 from multiprocessing import freeze_support
 import itertools
@@ -25,12 +26,13 @@ def augment_and_save(file, overlayer, args):
                 print("Failed to load the {}. Make sure it exists.", path)
                 exit()
 
-            img = cv2.resize(img, (256, 256))
+            img = cv2.resize(img, (512, 512))
             img_out, response_1, response_2 = overlayer(img)
 
             cv2.imwrite(os.path.join(args.out_folder, 'img', filename[:-4] + "_" + str(j) + '.jpg'), img_out)
-            cv2.imwrite(os.path.join(args.out_folder, 'mask',  filename[:-4] + "_" + str(j) + '_1.png'), response_1)
-            cv2.imwrite(os.path.join(args.out_folder, 'mask',  filename[:-4] + "_" + str(j) + '_2.png'), response_2)
+            cv2.imwrite(os.path.join(args.out_folder, 'mask',  filename[:-4] + "_" + str(j) + '_5.png'), response_1)
+            for k in range(5):
+                cv2.imwrite(os.path.join(args.out_folder, 'mask',  filename[:-4] + "_" + str(j) + '_'+str(k)+ '.png'), response_2[:,:,k])
 
 
 def run_multiprocessing(func, file_list, overlayer, args, n_processors):
@@ -76,15 +78,16 @@ def app():
     os.makedirs(os.path.join(args.out_folder, 'mask'), exist_ok=True)
 
 
-
+    # logger = multiprocessing.log_to_stderr()
+    # logger.setLevel(multiprocessing.SUBDEBUG)
     generator = AprilTagGenerator(root=args.root,
                                   family=args.family,
                                   size=args.size,
-                                  rx_lim_deg=(-50, 50),
-                                  ry_lim_deg=(-50, 50),
+                                  rx_lim_deg=(-30, 30),
+                                  ry_lim_deg=(-30, 30),
                                   rz_lim_deg=(-180, 180),
-                                  scalex_lim=(0.70, 5.0),
-                                  scaley_lim=(0.70, 5.0),
+                                  scalex_lim=(0.40, 4.0),
+                                  scaley_lim=(0.40, 4.0),
                                   )
 
     print(len(generator))
@@ -94,7 +97,7 @@ def app():
 
     n_processors = 10
 
-    mx_files = 8000
+    mx_files =100
 
     file_list = sorted(list(os.listdir(directory))[:mx_files])
 

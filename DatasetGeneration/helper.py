@@ -55,7 +55,7 @@ def generate_shadow_coordinates(imshape, no_of_shadows=1):
         vertices_list=[]
         for index in range(no_of_shadows):
             vertex=[]
-            for dimensions in range(np.random.randint(3,5)): ## Dimensionality of the shadow polygon
+            for dimensions in range(np.random.randint(3,50)): ## Dimensionality of the shadow polygon
                 vertex.append(( imshape[1]*np.random.uniform(),imshape[0]*np.random.uniform()))
             vertices = np.array([vertex], dtype=np.int32) ## single shadow vertices
             vertices_list.append(vertices)
@@ -161,7 +161,7 @@ def add_spot_light(image, light_position=None, max_brightness=255, min_brightnes
     Add mask generated from spot light to given image
     """
     if transparency is None:
-        transparency = random.uniform(0.5, 0.85)
+        transparency = random.uniform(0.9, 0.95)
     frame = image
     height, width, _ = frame.shape
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
@@ -271,7 +271,7 @@ def add_parallel_light(image, light_position=None, direction=None, max_brightnes
     Add mask generated from parallel light to given image
     """
     if transparency is None:
-        transparency = random.uniform(0.5, 0.85)
+        transparency = random.uniform(0.8, 0.85)
     frame = image
     height, width, _ = frame.shape
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)

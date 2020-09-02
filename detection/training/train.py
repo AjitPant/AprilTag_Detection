@@ -14,7 +14,7 @@ from pytorch_lightning.profiler import AdvancedProfiler
 def main(hparams):
     print(hparams.dataset)
     model = Unet(hparams)
-    if hparams.checkpoint != '':
+    if hparams.checkpoint != None:
         model = Unet.load_from_checkpoint(hparams.checkpoint)
     model.train()
 
@@ -25,6 +25,7 @@ def main(hparams):
         log_dir = os.path.join(hparams.log_dir, 'version_0')
 
     checkpoint_callback = ModelCheckpoint(
+        # monitor = 'loss',
         filepath=os.path.join(log_dir, 'checkpoints'),
         save_top_k=1,
         verbose=True,
@@ -44,7 +45,7 @@ def main(hparams):
         checkpoint_callback=checkpoint_callback,
         early_stop_callback=stop_callback,
         callbacks= [lr_logger],
-        accumulate_grad_batches=24,
+        accumulate_grad_batches=1,
         # resume_from_checkpoint=hparams.checkpoint,
         benchmark=True,
         # overfit_batches=10,
