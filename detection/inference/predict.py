@@ -14,7 +14,6 @@ from classifier import Resnet
 from corners_to_crop import crop_to_corners
 from dataset import DirDataset
 
-from torch import nn
 from torchvision import datasets, models, transforms
 
 
@@ -25,34 +24,24 @@ from scipy import stats
 import torch
 
 
+
+import operator
+import math
+from functools import reduce
+
+
+
 def nonzero_mode(arr):
     return stats.mode(arr[np.nonzero(arr)]).mode
 
-
+from scipy.spatial import distance as dist
+import numpy as np
+import cv2
 def order_points(pts):
-
-	pts = np.array(pts)
-	# sort the points based on their x-coordinates
-	xSorted = pts[np.argsort(pts[:, 0]), :]
-	# grab the left-most and right-most points from the sorted
-	# x-roodinate points
-	leftMost = xSorted[:2, :]
-	rightMost = xSorted[2:, :]
-	# now, sort the left-most coordinates according to their
-	# y-coordinates so we can grab the top-left and bottom-left
-	# points, respectively
-	leftMost = leftMost[np.argsort(leftMost[:, 1]), :]
-	(tl, bl) = leftMost
-	# now that we have the top-left coordinate, use it as an
-	# anchor to calculate the Euclidean distance between the
-	# top-left and right-most points; by the Pythagorean
-	# theorem, the point with the largest distance will be
-	# our bottom-right point
-	D = dist.cdist(tl[np.newaxis], rightMost, "euclidean")[0]
-	(br, tr) = rightMost[np.argsort(D)[::-1], :]
-	# return the coordinates in top-left, top-right,
-	# bottom-right, and bottom-left order
-	return np.array([tl, tr, br, bl], dtype="float32")
+	coords = pts
+	center = tuple(map(operator.truediv, reduce(lambda x, y: map(operator.add, x, y), coords), [len(coords)] * 2))
+	out = sorted(coords, key=lambda coord: (-135 - math.degrees(math.atan2(*tuple(map(operator.sub, coord, center))[::-1]))) % 360)
+	return np.array(out, dtype="float32")
 
 
 def reduce_to_tags(img, response_1, response_2, filename, hparams):
@@ -68,10 +57,12 @@ def reduce_to_tags(img, response_1, response_2, filename, hparams):
     mask_corners = response_2
     segregates = []
 
-    mask_corners = 4 - np.argmax(mask_corners, axis=0)
+    mask_corners =  (mask_corners>0.5).astype(np.uint8)
+    print(mask_corners.shape)
+
 
     cv2.namedWindow('mask_segmentation', cv2.WINDOW_NORMAL)
-    cv2.imshow("mask_segmentation", mask_segmentation)
+    cv2.imshow("mask_segmentation", mask_segmentation*255)
 
     # cv2.namedWindow('mask_garbage_0', cv2.WINDOW_NORMAL)
     # cv2.namedWindow('mask_garbage_1', cv2.WINDOW_NORMAL)
@@ -83,7 +74,8 @@ def reduce_to_tags(img, response_1, response_2, filename, hparams):
     # print(mask_corners.max())
     # for i in range(4):
     #     mask_real_corners +=mask_corners[i]*(i+1)
-    mask_real_corners = (mask_corners!=0).astype(np.uint8)
+    mask_real_corners = (mask_corners!=0).astype(np.uint8).squeeze(0)
+    print(mask_real_corners.shape)
     # mask_real_corners = 4- np.argmax(mask_corners, axis = 0).astype(np.uint8)
     # print(mask_real_corners)
 
@@ -151,57 +143,79 @@ def reduce_to_tags(img, response_1, response_2, filename, hparams):
 
         assert len(corner_list) == 4
         # print(corner_list)
-        pad = 30
+        pad = 0
         h, status = cv2.findHomography(
-            np.array(corner_list), np.array([[pad, pad], [224-pad, 0+pad], [224-pad, 224-pad], [pad, 224-pad]]))
+            np.array(corner_list), np.array([[pad, pad], [pad, 224-pad],[224-pad, 224-pad],  [224-pad, 0+pad]]))
         height, width, channels = img.shape
         im1Reg = cv2.warpPerspective(img, h, (224, 224))
-        cv2.namedWindow('a', cv2.WINDOW_NORMAL)
-        cv2.imshow('a', im1Reg)
+        cv2.namedWindow('unrotated_tag', cv2.WINDOW_NORMAL)
+        cv2.imshow('unrotated_tag', im1Reg)
         cv2.waitKey(0)
 
-        dictionary = cv2.aruco.Dictionary_get(cv2.aruco.DICT_APRILTAG_36h11)
-
-        # Initialize the detector parameters using default values
-        parameters =  cv2.aruco.DetectorParameters_create()
-        parameters.cornerRefinementMethod = cv2.aruco.CORNER_REFINE_APRILTAG
-
-        markerCorners, markerIds, rejectedCandidates = cv2.aruco.detectMarkers(im1Reg, dictionary, parameters=parameters)
-        print(im1Reg)
-        print(im1Reg.max())
-        print(im1Reg.min())
-
-        print(markerCorners)
-        print(rejectedCandidates)
-        for corners in markerCorners:
-            corner = corners[0]
-            print(corner)
-            h, status = cv2.findHomography(
-                        np.array(corner), np.array([[pad, pad], [224-pad, 0], [224-pad, 224-pad], [pad, 224-pad]]))
-            height, width, channels = img.shape
-            im1Regg = cv2.warpPerspective(im1Reg, h, (224, 224))
-            cv2.namedWindow('classical_detection', cv2.WINDOW_NORMAL)
-            cv2.imshow('classical_detection', im1Regg)
-            cv2.waitKey(0)
-
-
-        for corners in rejectedCandidates:
-            corner = corners[0]
-            print(corners)
-            h, status = cv2.findHomography(
-                        np.array(corner), np.array([[pad, pad], [pad, 224-pad], [224-pad, 224-pad], [224-pad, 0+pad]]))
-            height, width, channels = img.shape
-            im1Regg = cv2.warpPerspective(im1Reg, h, (224, 224))
-            cv2.namedWindow('classical_detection', cv2.WINDOW_NORMAL)
-            cv2.imshow('classical_detection', im1Regg)
-            cv2.waitKey(0)
-        im1Reg = Image.fromarray(im1Reg)
+        im2Reg = Image.fromarray(im1Reg)
 
         ds = dataset_classifier.DirDataset('', '')
-        im1Reg = (ds.preprocess(im1Reg))
-        out = net(im1Reg.unsqueeze(0).to(device))
+        im2Reg = (ds.preprocess(im2Reg))
+        out = net(im2Reg.unsqueeze(0).to(device))
         print(out)
-        rotation = np.argmax(out.cpu())
+        rotation = (np.argmax(out.squeeze(0).cpu())*-90).item()
+        print(rotation)
+
+        (h, w) = im1Reg.shape[:2]
+
+        # calculate the center of the image
+        center = (w / 2, h / 2)
+        scale = 1
+
+        M = cv2.getRotationMatrix2D(center, rotation, scale)
+        im3Reg = cv2.warpAffine(im1Reg, M, (h, w))
+
+        cv2.namedWindow('rotated_tag', cv2.WINDOW_NORMAL)
+        cv2.imshow('rotated_tag', im3Reg)
+        cv2.waitKey(0)
+
+
+        # dictionary = cv2.aruco.Dictionary_get(cv2.aruco.DICT_APRILTAG_36h11)
+
+        # # Initialize the detector parameters using default values
+        # parameters =  cv2.aruco.DetectorParameters_create()
+        # # parameters.cornerRefinementMethod = cv2.aruco.CORNER_REFINE_APRILTAG
+        # parameters.maxErroneousBitsInBorderRate = 0.8
+        # parameters.errorCorrectionRate = 0.8
+        # parameters.aprilTagMaxLineFitMse = 100
+
+        # markerCorners, markerIds, rejectedCandidates = cv2.aruco.detectMarkers(im1Reg, dictionary, parameters=parameters)
+        # print(im1Reg)
+        # print(im1Reg.max())
+        # print(im1Reg.min())
+
+        # print(markerCorners)
+        # print(rejectedCandidates)
+        # for corners in markerCorners:
+        #     corner = corners[0]
+        #     print(corner)
+        #     h, status = cv2.findHomography(
+        #                 np.array(corner), np.array([[pad, pad], [224-pad, 0], [224-pad, 224-pad], [pad, 224-pad]]))
+        #     height, width, channels = img.shape
+        #     im1Regg = cv2.warpPerspective(im1Reg, h, (224, 224))
+        #     cv2.namedWindow('classical_detection', cv2.WINDOW_NORMAL)
+        #     cv2.imshow('classical_detection', im1Regg)
+        #     cv2.waitKey(0)
+
+
+        # for corners in rejectedCandidates:
+        #     corner = corners[0]
+        #     print(corners)
+        #     h, status = cv2.findHomography(
+        #                 np.array(corner), np.array([[pad, pad], [pad, 224-pad], [224-pad, 224-pad], [224-pad, 0+pad]]))
+        #     height, width, channels = img.shape
+        #     im1Regg = cv2.warpPerspective(im1Reg, h, (224, 224))
+        #     cv2.namedWindow('classical_detection', cv2.WINDOW_NORMAL)
+        #     cv2.imshow('classical_detection', im1Regg)
+        #     cv2.waitKey(0)
+
+
+
 
         # print(corner_list)
 
@@ -217,17 +231,19 @@ def reduce_to_tags(img, response_1, response_2, filename, hparams):
 
 
 
-def predict(net, img, device='cpu', threshold=0.5):
+def predict(net, img, device='cpu', threshold=0.9):
     ds = DirDataset('', '')
     _img = (ds.preprocess(img))
 
+    # cv2.imshow("predict", _img.cpu().numpy().transpose((2, 1, 0)))
+    # cv2.waitKey(0)
     _img = _img.unsqueeze(0)
     _img = _img.to(device=device, dtype=torch.float32)
     with torch.no_grad():
         o = net(_img)
 
-        _o = o[:, 5, :, :]
-        o = o[:, :5,:,:]
+        _o = o[:, 1, :, :]
+        o = o[:, :1,:,:]
 
         # probs = torch.nn.functional.softmax(o, dim=1)
         print(o.shape)
@@ -252,7 +268,7 @@ def mask_to_image(mask):
 def main(hparams):
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     net = Unet.load_from_checkpoint(hparams.checkpoint)
-    net.freeze()
+    # net.freeze()
     net.to(device)
     net.eval()
 

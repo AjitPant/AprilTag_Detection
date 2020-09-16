@@ -27,7 +27,7 @@ class backgroundOverlayer(object):
         for tag in range(tags_to_overlay):
             index = random.randrange(len(self.generator))
             # index= random.choice([27,28, 29,30,31,32, 33, 34, 35,36, 37, 38, 38, 39, 40,41, 42, 43, 44])
-            index = random.randrange(100)
+            # index = random.randrange(500)
 
             # index = 27
 
@@ -47,6 +47,13 @@ class backgroundOverlayer(object):
 
             x_offset = random.randrange(background_img.shape[1] - width + 1)
             y_offset = random.randrange(background_img.shape[0] - height + 1)
+
+            out_response_view      = out_response[y_offset:y_offset + height, x_offset:x_offset + width]
+            real_out_response_view = real_out_response[y_offset:y_offset + height , x_offset:x_offset + width]
+
+            if  cv2.bitwise_and(out_response_view, mask).any():
+                continue
+
 
             #Merge with the image
             background_img_view = background_img[y_offset:y_offset + height , x_offset:x_offset + width]
@@ -72,13 +79,14 @@ class backgroundOverlayer(object):
                 # w_light = np.ones((height, width), dtype = np.float32)*w_light
                 # w_light =  (w_light +np.random.normal(0, 0.1, w_light.shape))
                 tag_img_view_lab[:, :, 0] = np.clip(np.multiply(tag_img_view_lab[:,:,0]  ,w_light), 0, 255);
-                # tag_img_view_lab[:, :,0] = add_spot_light(tag_img_view_lab[:,:,0][..., np.newaxis])
 
-                # tag_img_view_lab[:, :,0] = add_parallel_light(tag_img_view_lab[:,:,0][..., np.newaxis])
+                if np.random.uniform(0, 1, 1)[0] > 1.7:
+                    tag_img_view_lab[:, :,0] = add_spot_light(tag_img_view_lab[:,:,0][..., np.newaxis])
+                    tag_img_view_lab[:, :,0] = add_parallel_light(tag_img_view_lab[:,:,0][..., np.newaxis])
 
                 tag_img_masked= cv2.cvtColor(tag_img_view_lab, cv2.COLOR_LAB2BGR)
 
-            # tag_img_masked      = cv2.bitwise_and(tag_img_masked, tag_img, mask = mask)
+            tag_img_masked      = cv2.bitwise_and(tag_img_masked, tag_img, mask = mask)
             background_img_view =  cv2.add(img_masked, tag_img_masked)
 
             #make sure no overlaps
@@ -108,7 +116,7 @@ class backgroundOverlayer(object):
             background_img[:,:,2] = cv2.equalizeHist(background_img[:,:,2]);
 
         if np.random.uniform(0, 1, 1)[0] > 1.5:
-            background_img = add_shadow(background_img, random.randrange(6))
+            background_img = add_shadow(background_img, random.randrange(2))
 
         if np.random.uniform(0, 1, 1)[0] > 1.5:
             background_img = add_spot_light(background_img)

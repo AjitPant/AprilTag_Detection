@@ -27,7 +27,7 @@ def main(hparams):
     checkpoint_callback = ModelCheckpoint(
         # monitor = 'loss',
         filepath=os.path.join(log_dir, 'checkpoints'),
-        save_top_k=1,
+        save_top_k=4,
         verbose=True,
     )
     stop_callback = EarlyStopping(
@@ -45,7 +45,7 @@ def main(hparams):
         checkpoint_callback=checkpoint_callback,
         early_stop_callback=stop_callback,
         callbacks= [lr_logger],
-        accumulate_grad_batches=1,
+        # accumulate_grad_batches=8,
         # resume_from_checkpoint=hparams.checkpoint,
         benchmark=True,
         # overfit_batches=10,

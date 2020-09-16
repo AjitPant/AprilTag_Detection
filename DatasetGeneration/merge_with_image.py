@@ -18,7 +18,9 @@ from threading import Lock
 import itertools
 
 from scipy import stats
-
+import operator
+import math
+from functools import reduce
 
 import torch
 
@@ -26,33 +28,14 @@ import torch
 def nonzero_mode(arr):
     return stats.mode(arr[np.nonzero(arr)]).mode
 
-
+from scipy.spatial import distance as dist
+import numpy as np
+import cv2
 def order_points(pts):
-
-	pts = np.array(pts)
-	# sort the points based on their x-coordinates
-	xSorted = pts[np.argsort(pts[:, 0]), :]
-	# grab the left-most and right-most points from the sorted
-	# x-roodinate points
-	leftMost = xSorted[:2, :]
-	rightMost = xSorted[2:, :]
-	# now, sort the left-most coordinates according to their
-	# y-coordinates so we can grab the top-left and bottom-left
-	# points, respectively
-	leftMost = leftMost[np.argsort(leftMost[:, 1]), :]
-	(tl, bl) = leftMost
-	# now that we have the top-left coordinate, use it as an
-	# anchor to calculate the Euclidean distance between the
-	# top-left and right-most points; by the Pythagorean
-	# theorem, the point with the largest distance will be
-	# our bottom-right point
-	D = dist.cdist(tl[np.newaxis], rightMost, "euclidean")[0]
-	(br, tr) = rightMost[np.argsort(D)[::-1], :]
-	# return the coordinates in top-left, top-right,
-	# bottom-right, and bottom-left order
-	return np.array([tl, tr, br, bl], dtype="float32")
-
-
+	coords = pts
+	center = tuple(map(operator.truediv, reduce(lambda x, y: map(operator.add, x, y), coords), [len(coords)] * 2))
+	out = sorted(coords, key=lambda coord: (-135 - math.degrees(math.atan2(*tuple(map(operator.sub, coord, center))[::-1]))) % 360)
+	return np.array(out, dtype="float32")
 mutex = Lock()
 
 
@@ -126,8 +109,8 @@ def reduce_to_tags(img, response_1, response_2, filename, args):
             mode = map(nonzero_mode, internal_internal_mask)
             #find the center of contours
             M = cv2.moments(internal_contours[inner_ind])
-            cX = int(M["m10"] / (M["m00"]+1e-2))
-            cY = int(M["m01"] / (M["m00"]+1e-2))
+            cX = int(M["m10"] / (M["m00"]+1e-9))
+            cY = int(M["m01"] / (M["m00"]+1e-9))
             segregates.append([cX, cY])
         print(segregates)
         if len(segregates) != 4:
@@ -144,9 +127,9 @@ def reduce_to_tags(img, response_1, response_2, filename, args):
 
         assert len(corner_list) == 4
         # print(corner_list)
-
+        rand = random.randrange(1,10)
         h, status = cv2.findHomography(
-            np.array(corner_list), np.array([[0, 0], [0, 224], [224, 224], [224, 0]]))
+            np.array(corner_list), np.array([[0+rand, 0+rand], [0+rand, 224-rand], [224-rand, 224-rand], [224-rand, 0+rand]]))
         height, width, channels = img.shape
         im1Reg = cv2.warpPerspective(img, h, (224, 224))
         # cv2.namedWindow('a', cv2.WINDOW_NORMAL)
@@ -159,6 +142,8 @@ def reduce_to_tags(img, response_1, response_2, filename, args):
 
 
         print(f"{mask_corners[int(corner_list[0][1])][int(corner_list[0][0])]}")
+        if mask_corners[int(corner_list[0][1])][int(corner_list[0][0])] == 4:
+            assert(False)
         with open(os.path.join(args.out_folder, 'simg',filename[:-4] + "_" + str(index) + '.txt'), "w") as text_file:
             print(f"{mask_corners[int(corner_list[0][1])][int(corner_list[0][0])]}", file=text_file)
 
@@ -171,27 +156,30 @@ def reduce_to_tags(img, response_1, response_2, filename, args):
 
 
 def augment_and_save(file, overlayer, args):
-    with mutex:
-        filename = os.fsdecode(file)
-        if filename.endswith(".png") or filename.endswith(".jpg") or filename.endswith(".bmp"):
-            path = (os.path.join(args.img_folder, filename))
-            for j in range(1):
-                img = cv2.imread(path)
-                if img is None:
-                    print("Failed to load the {}. Make sure it exists.", path)
-                    exit()
+    filename = os.fsdecode(file)
+    if filename.endswith(".png") or filename.endswith(".jpg") or filename.endswith(".bmp"):
+        path = (os.path.join(args.img_folder, filename))
+        for j in range(1):
+            img = cv2.imread(path)
 
-                img = cv2.resize(img, (512, 512))
-                img_out, response_1, response_2 = overlayer(img)
-                reduce_to_tags(img_out, response_1, response_2, filename, args)
+            if img is None:
+                print("Failed to load the {}. Make sure it exists.", path)
+                exit()
 
-                cv2.imwrite(os.path.join(args.out_folder, 'img',
-                                         filename[:-4] + "_" + str(j) + '.jpg'), img_out)
-                cv2.imwrite(os.path.join(args.out_folder, 'mask',
-                                         filename[:-4] + "_" + str(j) + '_5.png'), response_1)
-                for k in range(5):
-                    cv2.imwrite(os.path.join(args.out_folder, 'mask',  filename[:-4] + "_" + str(
-                        j) + '_'+str(k) + '.png'), response_2[:, :, k])
+            img = cv2.resize(img, (512*2, 512*2))
+            img_out, response_1, response_2 = overlayer(img)
+            # reduce_to_tags(img_out, response_1, response_2, filename, args)
+
+            img_out = cv2.resize(img_out, (512, 512), interpolation=cv2.INTER_AREA)
+            response_1 = cv2.resize(response_1, (512, 512), interpolation=cv2.INTER_AREA)
+            response_2 = cv2.resize(response_2, (512, 512), interpolation=cv2.INTER_AREA)
+            cv2.imwrite(os.path.join(args.out_folder, 'img',
+                                     filename[:-4] + "_" + str(j) + '.jpg'), img_out)
+            cv2.imwrite(os.path.join(args.out_folder, 'mask',
+                                     filename[:-4] + "_" + str(j) + '_5.png'), response_1)
+            for k in range(1):
+                cv2.imwrite(os.path.join(args.out_folder, 'mask',  filename[:-4] + "_" + str(
+                    j) + '_'+str(k) + '.png'), response_2[:, :, k])
 
 
 def run_multiprocessing(func, file_list, overlayer, args, n_processors):
@@ -225,10 +213,10 @@ def app():
     parser.add_argument(
         '--size',
         type=int,
-        default=64,
+        default=1024,
         help='Size of April tag images in pixels.')
     parser.add_argument(
-        '--mx_tags',
+       '--mx_tags',
         type=int,
         default=30,
         help='Maximum number of tags to generate in an image')
@@ -243,11 +231,11 @@ def app():
     generator = AprilTagGenerator(root=args.root,
                                   family=args.family,
                                   size=args.size,
-                                  rx_lim_deg=(-30, 30),
-                                  ry_lim_deg=(-30, 30),
+                                  rx_lim_deg=(30, 70),
+                                  ry_lim_deg=(30, 70),
                                   rz_lim_deg=(-180, 180),
-                                  scalex_lim=(0.40, 4.0),
-                                  scaley_lim=(0.40, 4.0),
+                                  scalex_lim=(0.125/2/1.5, 1.0/8),
+                                  scaley_lim=(0.125/2/1.5, 1.0/8),
                                   )
 
     print(len(generator))
@@ -255,11 +243,11 @@ def app():
     directory = os.fsencode(args.img_folder)
     i = 0
 
-    n_processors = 10
+    n_processors = 4
 
     mx_files = 500
 
-    file_list = sorted(list(os.listdir(directory))[:mx_files])
+    file_list = sorted(list(os.listdir(directory))[mx_files//2:mx_files])
 
     '''
     pass the task function, followed by the parameters to processors

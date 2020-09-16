@@ -30,7 +30,7 @@ class Resnet(pl.LightningModule):
         self.hparams = hparams
         self.model_ft = models.resnet18(pretrained=True)
         self.num_ftrs = self.model_ft.fc.in_features
-        self.model_ft.fc = nn.Linear(self.num_ftrs, 5)
+        self.model_ft.fc = nn.Linear(self.num_ftrs, 4)
 
     def forward(self, input):
         return self.model_ft(input)

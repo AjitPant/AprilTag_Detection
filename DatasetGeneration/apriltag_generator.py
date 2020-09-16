@@ -67,8 +67,8 @@ class AprilTagGenerator(object):
         response = np.zeros((height, width, num_feats + 1), dtype=np.uint8)
         response[:, :, -1] = 255
 
-        d1 = 1
-        d2 = 1
+        d1 = 2
+        d2 = 2
         for i in range(num_feats):
             assert 0.0 <= corners[i, 0] < 1.0, 'corner x outside of image border!'
             assert 0.0 <= corners[i, 1] < 1.0, 'corner y outside of image border!'
@@ -76,10 +76,8 @@ class AprilTagGenerator(object):
             y = int(round(corners[i, 1] * height))
 
 
-            for j in range(max(0, y-d1), min(height, y+d1+1)):
-                for k in range(max(0, x-d1), min(width, x+d1+1)):
-                    response[j,k, i] = 255/(1+0*random.randint(1,10))
 
+            response[max(0, y - d2):min(height, y + d2 + 1), max(0, x - d2):min(width, x + d2 + 1), 0] = 255
             response[max(0, y - d2):min(height, y + d2 + 1), max(0, x - d2):min(width, x + d2 + 1), -1] = 0
             # print(np.random.multivariate_normal((x, y), [[1,0],[0,1]], size = (2,2)))
         return response

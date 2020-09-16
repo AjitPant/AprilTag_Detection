@@ -17,7 +17,7 @@ class Rotation3DAugmentation(object):
                  rx_lim_deg=(0., 0.),
                  ry_lim_deg=(0., 0.),
                  rz_lim_deg=(0., 0.),
-                 prob=0.9,
+                 prob=1.0,
                  debug=False):
         '''
         :param rx_lim_deg: tuple(float, float) range of rotation around x axis in degree
@@ -45,9 +45,22 @@ class Rotation3DAugmentation(object):
             return src_image, src_corners
 
         height, width = src_image.shape[:2]
+        rx = 0
+
         rx = np.random.uniform(self.rx_lim[0], self.rx_lim[1], 1)[0]
         ry = np.random.uniform(self.ry_lim[0], self.ry_lim[1], 1)[0]
         rz = np.random.uniform(self.rz_lim[0], self.rz_lim[1], 1)[0]
+
+        if np.random.uniform(0, 1, 1)>0.5:
+            rx = np.random.uniform(self.rx_lim[0], self.rx_lim[1], 1)[0]
+        else:
+            rx = np.random.uniform(-self.rx_lim[1], -self.rx_lim[0], 1)[0]
+
+        if np.random.uniform(0, 1, 1)>0.5:
+            ry = np.random.uniform(self.ry_lim[0], self.ry_lim[1], 1)[0]
+        else:
+            ry = np.random.uniform(-self.ry_lim[1], -self.ry_lim[0], 1)[0]
+
 
         src_R_dst = euler_angles_to_rotation_matrix(rx, ry, rz).astype(np.float32)
 
@@ -92,7 +105,7 @@ class ScaleAugmentation(object):
     def __init__(self,
                  scalex_lim=(1., 1.),
                  scaley_lim=(1., 1.),
-                 prob=0.8,
+                 prob=1.0,
                  debug=False):
         '''
         :param scalex_lim_deg: tuple(float, float) range of ratio of final tag's \
@@ -129,9 +142,9 @@ class ScaleAugmentation(object):
         if np.random.uniform(0, 1, 1)[0] >= self.prob:
             scalex = np.random.uniform(self.scalex_lim[0], 0.8, 1)[0]
             scaley = np.random.uniform(self.scaley_lim[0], 0.8, 1)[0]
+# GAussian
 
-
-        dst_image = cv2.resize(src_image,dsize = None, fx= scalex, fy = scaley)
+        dst_image = cv2.resize(src_image, interpolation = cv2.INTER_AREA,dsize = None, fx= scalex, fy = scaley)
         dst_corners = src_corners
 
         return dst_image,  dst_corners

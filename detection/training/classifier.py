@@ -30,7 +30,7 @@ class Resnet(pl.LightningModule):
         self.hparams = hparams
         self.model_ft = models.resnet18(pretrained=True)
         self.num_ftrs = self.model_ft.fc.in_features
-        self.model_ft.fc = nn.Linear(self.num_ftrs, 5)
+        self.model_ft.fc = nn.Linear(self.num_ftrs, 4)
 
     def forward(self, input):
         return self.model_ft(input)
@@ -73,8 +73,8 @@ class Resnet(pl.LightningModule):
         n_train = len(dataset) - n_val
 
         train_ds, val_ds = random_split(dataset, [n_train, n_val], generator=torch.Generator().manual_seed(347))
-        train_loader = DataLoader(train_ds, batch_size=8,num_workers=4, pin_memory=True, shuffle=True)
-        val_loader = DataLoader(val_ds, batch_size=8,num_workers=4, pin_memory=True, shuffle=False)
+        train_loader = DataLoader(train_ds, batch_size=16,num_workers=8, pin_memory=True, shuffle=True)
+        val_loader = DataLoader(val_ds, batch_size=16,num_workers=8, pin_memory=True, shuffle=False)
 
         return {
             'train': train_loader,
