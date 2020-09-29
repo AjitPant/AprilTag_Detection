@@ -36,10 +36,10 @@ class AprilTagImages(object):
         nsquares_y = mosaic_image.shape[0] - np.count_nonzero(np.sum(mosaic_image, axis=1, dtype=np.int)) + 1
         nsquares_x = mosaic_image.shape[1] - np.count_nonzero(np.sum(mosaic_image, axis=0, dtype=np.int)) + 1
 
-        if self.family is TAG36h11:
+        if self.family == TAG36h11:
             step = 10
         else:
-            assert False, 'Unknown April tag family!'
+            assert False, 'Unknown April tag family!' + self.family
 
         images = list()
         for i in range(nsquares_y):
@@ -57,13 +57,15 @@ class AprilTagImages(object):
         return images
 
     def corners(self):
-        if self.family is TAG36h11:
+
+        if self.family == TAG36h11:
             lo = 0.1
             hi = 0.9
         else:
-            assert False, 'Unknown April tag family!'
-        return np.array([[lo, lo], [hi, lo], [hi, hi], [lo, hi]], dtype=np.float32)
+            assert False, 'Unknown April tag family!' + self.family
+        return np.array([[[lo, lo], [hi, lo], [hi, hi], [lo, hi]],
+                         [[0.05, 0.05], [1-0.05, 0.05], [1-0.05, 1-0.05], [0.05, 1-0.05]]], dtype=np.float32)
 
     def image(self, idx):
-        assert idx < len(self.images), 'Not a valid index.'
-        return self.images[idx]
+                    assert idx < len(self.images), 'Not a valid index.'
+                    return self.images[idx]

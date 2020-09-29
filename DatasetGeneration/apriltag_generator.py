@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 from apriltag_images import AprilTagImages
 from image_augmentation import Rotation3DAugmentation, ScaleAugmentation
-
+import random
 
 class AprilTagGenerator(object):
     """
@@ -38,20 +38,21 @@ class AprilTagGenerator(object):
         src_corners_uv = (self.apriltags.corners() * self.apriltags.size + pad_width) / src_width
 
         # Warped April Tag image and its normalized uv corners.
-        dst_image, _, dst_corners_uv = self.rotate3d(src_image, src_corners_uv)
+        dst_image,  dst_corners_uv = self.rotate3d(src_image, src_corners_uv)
         dst_image, dst_corners_uv = self.scale(dst_image, dst_corners_uv)
 
         dst_height, dst_width = dst_image.shape[:2]
         mask = np.zeros((dst_height, dst_width), dtype=np.uint8)
 
-        polygon = (dst_corners_uv * dst_image.shape[::-1]).astype(np.int32)
+        polygon = (dst_corners_uv[1] * dst_image.shape[::-1]).astype(np.int32)
         cv2.fillPoly(mask, np.array([polygon]), 255)
 
         return dict(
             image=dst_image,
             mask=mask,
-            response=self.get_response(dst_corners_uv, dst_width, dst_height),
-            corners_uv=dst_corners_uv)
+            response=self.get_response(dst_corners_uv[0], dst_width, dst_height),
+            corners_uv=dst_corners_uv[0])
+
 
     @staticmethod
     def get_response(corners, width, height):
@@ -73,6 +74,12 @@ class AprilTagGenerator(object):
             assert 0.0 <= corners[i, 1] < 1.0, 'corner y outside of image border!'
             x = int(round(corners[i, 0] * width))
             y = int(round(corners[i, 1] * height))
-            response[max(0, y - d1):min(height, y + d1 + 1), max(0, x - d1):min(width, x + d1 + 1), i] = 255
+
+
+            for j in range(max(0, y-d1), min(height, y+d1+1)):
+                for k in range(max(0, x-d1), min(width, x+d1+1)):
+                    response[j,k, i] = 255/(1+0*random.randint(1,10))
+
             response[max(0, y - d2):min(height, y + d2 + 1), max(0, x - d2):min(width, x + d2 + 1), -1] = 0
+            # print(np.random.multivariate_normal((x, y), [[1,0],[0,1]], size = (2,2)))
         return response

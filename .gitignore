@@ -133,15 +133,27 @@ dmypy.json
 .vscode/
 
 #Custom stuff
+**/*.whl
 **/*.png
 **/*.jpg
 **/*.jpeg
+**/*.txt
 **/*.pt
 **/*.pth
 **/*.ckpt
 
+**/back
+**/model_nightly
 imgs
 img/
+im_bet/
+img_better/
+model_nightly/
+models/
+img/
+dataset/
 mask/
+mask/
+back/
 test
 lightning_logs

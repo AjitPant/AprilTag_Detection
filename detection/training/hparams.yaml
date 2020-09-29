@@ -1,0 +1,5 @@
+checkpoint: ''
+dataset: better
+log_dir: lightning_logs
+n_channels: 3
+n_classes: 6

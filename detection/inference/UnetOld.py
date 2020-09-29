@@ -393,14 +393,14 @@ class Unet(pl.LightningModule):
         loss = torch.zeros(1)
 
         for batch in range(y_hat.shape[0]):
-            for i in range(6):
+            for i in range(5):
 
                 loss += self.loss_func(y_hat[batch,i],   y[batch,i])
 
         # loss += F.binary_cross_entropy_with_logits(y_hat, y)
         corner_loss = loss.clone().detach()
         # loss += F.binary_cross_entropy_with_logits(y_hat[:, :5], y[:,:5])
-        # loss += F.binary_cross_entropy_with_logits(y_hat[:, 5], y[:,5])
+        loss += F.binary_cross_entropy_with_logits(y_hat[:, 5], y[:,5])
         # for batch in range(y_hat.shape[0]):
             # loss += self.loss_func(y_hat[batch,5], y[batch,5])
 
@@ -415,7 +415,7 @@ class Unet(pl.LightningModule):
         # loss = F.cross_entropy(y_hat[:,:5], y[:,1].squeeze(1).long(), weight = self.cross_entropy_weights)
         loss = torch.zeros(1)
         for batch in range(y_hat.shape[0]):
-            for i in range(6):
+            for i in range(5):
 
                 loss += self.loss_func(y_hat[batch,i] , y[batch,i])
         # loss += F.binary_cross_entropy_with_logits(y_hat, y)
@@ -423,7 +423,7 @@ class Unet(pl.LightningModule):
         # for batch in range(y_hat.shape[0]):
         #     loss += self.loss_func(y_hat[batch,5], y[batch,5])
         # loss += F.binary_cross_entropy_with_logits(y_hat[:, :5], y[:,:5])
-        # loss += F.binary_cross_entropy_with_logits(y_hat[:, 5], y[:,5])
+        loss += F.binary_cross_entropy_with_logits(y_hat[:, 5], y[:,5])
 
         return {'val_loss': loss, 'val_corner_loss' : corner_loss}
 
@@ -434,7 +434,7 @@ class Unet(pl.LightningModule):
         return {'val_loss': avg_loss, 'log': tensorboard_logs}
 
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.parameters(), lr=3e-4)
+        optimizer = torch.optim.Adam(self.parameters(), lr=3e-3)
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor = 0.3, patience = 3)
         return [optimizer] , [scheduler]
 
