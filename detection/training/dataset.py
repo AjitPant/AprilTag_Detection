@@ -22,10 +22,10 @@ class DirDataset(Dataset):
                         A.ElasticTransform(),
                         A.GridDistortion(),
                         A.OpticalDistortion(),
-                    ], p=0.1),
+                    ], p=0.2),
 
             A.OneOf([
-                A.RandomSizedCrop(min_max_height=(original_height//8, original_height),
+                A.RandomSizedCrop(min_max_height=(original_height//2, original_height),
                                   height=original_height, width=original_width, p=0.5),
                 # A.RandomSizedCrop(min_max_height=(original_height//3, original_height),
                 #                   height=original_height//2, width=original_width//2, p=0.5),
@@ -40,7 +40,7 @@ class DirDataset(Dataset):
             A.OneOf([
                 A.ToGray(),
                 A.CoarseDropout(max_height=10, min_height=2,
-                                max_width=10, min_width=2, min_holes=1),
+                                max_width=10, min_width=2, min_holes=1, max_holes=10),
                 A.ChannelDropout(),
             ], p=0.5),
 
@@ -54,22 +54,22 @@ class DirDataset(Dataset):
                 A.RandomRotate90(p=0.9),
                 A.Rotate(limit=180, p=0.9),
             ], p=1.0),
-            # A.CLAHE(p=0.8),
+            A.CLAHE(p=0.8),
             A.GaussNoise(),
             A.OneOf([
                 A.RandomSnow(),
                 A.RandomRain(),
                 A.RandomFog(),
-            ], p=0.0),
-            A.OneOf([
-                A.RandomShadow(p=0.8),
-                A.RandomSunFlare(src_radius=40),
             ], p=0.5),
+            A.OneOf([
+                A.RandomShadow(p=0.8, num_shadows_upper=5),
+                A.RandomSunFlare(src_radius=40),
+            ], p=0.3),
             A.OneOf([
                 A.RandomBrightnessContrast(p=0.5),
                 A.RGBShift(p=0.5),
                 A.RandomGamma(p=0.8)
-            ], p=0.1),
+            ], p=0.4),
         ], p=0.8,
             additional_targets={
             'image': 'image',
@@ -81,14 +81,14 @@ class DirDataset(Dataset):
         print(self.img_dir)
         try:
             self.ids = (sorted([os.path.splitext(s)[0]
-                                for s in os.listdir(self.img_dir)]))
+                                for s in os.listdir(self.img_dir) if os.path.splitext(s)[1] == '.jpg']))
             # self.ids.reverse()
 
         except FileNotFoundError:
             self.ids = []
 
     def __len__(self):
-        return min(2000, len(self.ids))
+        return min(50000, len(self.ids))
 
     def preprocess(self, img, mask=False):
 

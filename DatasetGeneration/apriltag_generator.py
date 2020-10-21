@@ -50,8 +50,9 @@ class AprilTagGenerator(object):
         return dict(
             image=dst_image,
             mask=mask,
-            response=self.get_response(dst_corners_uv[0], dst_width, dst_height),
-            corners_uv=dst_corners_uv[0])
+            response=self.get_response(dst_corners_uv[0], dst_width, dst_height)[0],
+            response_in_use=self.get_response(dst_corners_uv[0], dst_width, dst_height)[1],
+            corners_uv=dst_corners_uv[0]*self.size)
 
 
     @staticmethod
@@ -67,6 +68,9 @@ class AprilTagGenerator(object):
         response = np.zeros((height, width, num_feats + 1), dtype=np.uint8)
         response[:, :, -1] = 255
 
+        response_in_use = np.zeros((height, width, num_feats + 1), dtype=np.uint8)
+        response_in_use[:, :, -1] = 255
+
         d1 = 2
         d2 = 2
         for i in range(num_feats):
@@ -79,5 +83,8 @@ class AprilTagGenerator(object):
 
             response[max(0, y - d2):min(height, y + d2 + 1), max(0, x - d2):min(width, x + d2 + 1), 0] = 255
             response[max(0, y - d2):min(height, y + d2 + 1), max(0, x - d2):min(width, x + d2 + 1), -1] = 0
+
+            response_in_use[max(0, y - d2):min(height, y + d2 + 1), max(0, x - d2):min(width, x + d2 + 1), i] = 255
+            response_in_use[max(0, y - d2):min(height, y + d2 + 1), max(0, x - d2):min(width, x + d2 + 1), -1] = 0
             # print(np.random.multivariate_normal((x, y), [[1,0],[0,1]], size = (2,2)))
-        return response
+        return response, response_in_use

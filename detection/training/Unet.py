@@ -308,13 +308,14 @@ class Unet(pl.LightningModule):
 
         loss = torch.zeros(1)
 
-        for batch in range(y_hat.shape[0]):
-            for i in range(1):
+        # for batch in range(y_hat.shape[0]):
+        #     for i in range(2):
 
-                loss += self.loss_func(y_hat[batch,i],   y[batch,i])
+        #         loss += self.loss_func(y_hat[batch,i],   y[batch,i])
+        # loss += self.loss_func(y_hat , y)
 
         # loss += 100*F.binary_cross_entropy_with_logits(y_hat[:,1], y[:,1])
-        # loss += F.binary_cross_entropy_with_logits(y_hat, y)
+        loss += F.binary_cross_entropy_with_logits(y_hat, y)
         # corner_loss = loss.clone().detach()
         # loss += F.binary_cross_entropy_with_logits(y_hat[:, :5], y[:,:5])
         # loss += F.binary_cross_entropy_with_logits(y_hat[:, 5], y[:,5])
@@ -331,11 +332,13 @@ class Unet(pl.LightningModule):
 
         # loss = F.cross_entropy(y_hat[:,:5], y[:,1].squeeze(1).long(), weight = self.cross_entropy_weights)
         loss = torch.zeros(1)
-        for batch in range(y_hat.shape[0]):
-            for i in range(1):
+        # for batch in range(y_hat.shape[0]):
+        #     for i in range(2):
 
-                loss += self.loss_func(y_hat[batch,i] , y[batch,i])
+        #         loss += self.loss_func(y_hat[batch,i] , y[batch,i])
+        # loss += self.loss_func(y_hat , y)
         # loss += 100*F.binary_cross_entropy_with_logits(y_hat, y)
+        loss += F.binary_cross_entropy_with_logits(y_hat, y)
         # corner_loss = loss.clone().detach()
         # for batch in range(y_hat.shape[0]):
         #     loss += self.loss_func(y_hat[batch,5], y[batch,5])
@@ -351,7 +354,7 @@ class Unet(pl.LightningModule):
         return {'val_loss': avg_loss, 'log': tensorboard_logs}
 
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.parameters(), lr=3e-3)
+        optimizer = torch.optim.Adam(self.parameters(), lr=3e-4)
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor = 0.3, patience = 3)
         # scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer, max_lr=1.0, steps_per_epoch=40, epochs=10)
         return [optimizer] , [scheduler]

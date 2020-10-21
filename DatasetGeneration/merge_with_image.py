@@ -1,4 +1,5 @@
 
+import pickle
 from scipy.spatial import distance as dist
 import time
 import random
@@ -39,15 +40,17 @@ def order_points(pts):
 mutex = Lock()
 
 
-def reduce_to_tags(img, response_1, response_2, filename, args):
+cnt = [0,0,0,0]
+def reduce_to_tags(img, response_1, response_2,response_id, filename, args):
     mask_segmentation = response_1
     mask_corners = response_2
     segregates = []
-
     mask_corners =  np.argmax(mask_corners, axis=2)
+    # assert((mask_corners==1).any())
 
-    # cv2.namedWindow('mask_segmentation', cv2.WINDOW_NORMAL)
-    # cv2.imshow("mask_segmentation", mask_segmentation)
+    # cv2.namedWindow('mask_corners', cv2.WINDOW_NORMAL)
+    # cv2.imshow("mask_corners", response_id[:,:,0])
+    # cv2.waitKey(0)
 
     # cv2.namedWindow('mask_garbage_0', cv2.WINDOW_NORMAL)
     # cv2.namedWindow('mask_garbage_1', cv2.WINDOW_NORMAL)
@@ -112,13 +115,15 @@ def reduce_to_tags(img, response_1, response_2, filename, args):
             cX = int(M["m10"] / (M["m00"]+1e-9))
             cY = int(M["m01"] / (M["m00"]+1e-9))
             segregates.append([cX, cY])
-        print(segregates)
+        # print(segregates)
         if len(segregates) != 4:
             continue
         segregates = order_points(segregates)
         # print(len(segregates))
         if len(segregates) != 4:
             continue
+
+
 
         corner_list = []
         # print(segregates)
@@ -127,9 +132,17 @@ def reduce_to_tags(img, response_1, response_2, filename, args):
 
         assert len(corner_list) == 4
         # print(corner_list)
-        rand = random.randrange(1,10)
+        rand1= random.randrange(25,35)
+        rand2 = random.randrange(25,35)
+        rand3 = random.randrange(25,35)
+        rand4 = random.randrange(25,35)
+        rand5 = random.randrange(25,35)
+        rand6 = random.randrange(25,35)
+        rand7 = random.randrange(25,35)
+        rand8 = random.randrange(25,35)
+
         h, status = cv2.findHomography(
-            np.array(corner_list), np.array([[0+rand, 0+rand], [0+rand, 224-rand], [224-rand, 224-rand], [224-rand, 0+rand]]))
+            np.array(corner_list), np.array([[0+rand1, 0+rand2], [0+rand3, 224-rand4], [224-rand5, 224-rand6], [224-rand7, 0+rand8]]))
         height, width, channels = img.shape
         im1Reg = cv2.warpPerspective(img, h, (224, 224))
         # cv2.namedWindow('a', cv2.WINDOW_NORMAL)
@@ -137,15 +150,26 @@ def reduce_to_tags(img, response_1, response_2, filename, args):
         # cv2.waitKey(0)
         # print(corner_list)
 
-        cv2.imwrite(os.path.join(args.out_folder, 'simg',
+        # cv2.imwrite(os.path.join(args.out_folder, 'simg',
+        #                          filename[:-4] + "_" + str(index) + '.jpg'), im1Reg)
+
+        # print(f"{mask_corners[int(corner_list[0][1])][int(corner_list[0][0])]}")
+
+        # # cnt[mask_corners[int(corner_list[0][1])][int(corner_list[0][0])]] +=1
+        # # print(cnt);
+        # if mask_corners[int(corner_list[0][1])][int(corner_list[0][0])] == 4:
+        #     assert(False)
+        # with open(os.path.join(args.out_folder, 'simg',filename[:-4] + "_" + str(index) + '.txt'), "w") as text_file:
+        #     print(f"{mask_corners[int(corner_list[0][1])][int(corner_list[0][0])]}", file=text_file)
+
+
+        label = response_id[int(corner_list[0][1]), int(corner_list[0][0]), 0]
+
+        cv2.imwrite(os.path.join(args.out_folder, 'ssimg',
                                  filename[:-4] + "_" + str(index) + '.jpg'), im1Reg)
 
-
-        print(f"{mask_corners[int(corner_list[0][1])][int(corner_list[0][0])]}")
-        if mask_corners[int(corner_list[0][1])][int(corner_list[0][0])] == 4:
-            assert(False)
-        with open(os.path.join(args.out_folder, 'simg',filename[:-4] + "_" + str(index) + '.txt'), "w") as text_file:
-            print(f"{mask_corners[int(corner_list[0][1])][int(corner_list[0][0])]}", file=text_file)
+        with open(os.path.join(args.out_folder, 'ssimg',filename[:-4] + "_" + str(index) + '.txt'), "w") as text_file:
+            print(f"{label}", file=text_file)
 
         index = index + 1
 
@@ -167,12 +191,12 @@ def augment_and_save(file, overlayer, args):
                 exit()
 
             img = cv2.resize(img, (512*2, 512*2))
-            img_out, response_1, response_2 = overlayer(img)
-            # reduce_to_tags(img_out, response_1, response_2, filename, args)
+            img_out, response_1, response_2, response_3 ,response_id, corners_collection = overlayer(img)
+            # reduce_to_tags(img_out, response_1, response_3,response_id, filename, args)
 
-            img_out = cv2.resize(img_out, (512, 512), interpolation=cv2.INTER_AREA)
-            response_1 = cv2.resize(response_1, (512, 512), interpolation=cv2.INTER_AREA)
-            response_2 = cv2.resize(response_2, (512, 512), interpolation=cv2.INTER_AREA)
+            img_out = cv2.resize(img_out ,(512//1, 512//1), interpolation=cv2.INTER_AREA)
+            response_1 = cv2.resize(response_1, (512//1, 512//1), interpolation=cv2.INTER_AREA)
+            response_2 = cv2.resize(response_2, (512//1, 512//1), interpolation=cv2.INTER_AREA)
             cv2.imwrite(os.path.join(args.out_folder, 'img',
                                      filename[:-4] + "_" + str(j) + '.jpg'), img_out)
             cv2.imwrite(os.path.join(args.out_folder, 'mask',
@@ -180,6 +204,8 @@ def augment_and_save(file, overlayer, args):
             for k in range(1):
                 cv2.imwrite(os.path.join(args.out_folder, 'mask',  filename[:-4] + "_" + str(
                     j) + '_'+str(k) + '.png'), response_2[:, :, k])
+            with open(os.path.join(args.out_folder, 'img',  filename[:-4] + "_" + str(j)   + '.pkl'), 'wb') as f:
+                pickle.dump(corners_collection, f)
 
 
 def run_multiprocessing(func, file_list, overlayer, args, n_processors):
@@ -225,17 +251,18 @@ def app():
     os.makedirs(os.path.join(args.out_folder, 'img'), exist_ok=True)
     os.makedirs(os.path.join(args.out_folder, 'mask'), exist_ok=True)
     os.makedirs(os.path.join(args.out_folder, 'simg'), exist_ok=True)
+    os.makedirs(os.path.join(args.out_folder, 'ssimg'), exist_ok=True)
 
     # logger = multiprocessing.log_to_stderr()
     # logger.setLevel(multiprocessing.SUBDEBUG)
     generator = AprilTagGenerator(root=args.root,
                                   family=args.family,
                                   size=args.size,
-                                  rx_lim_deg=(30, 70),
-                                  ry_lim_deg=(30, 70),
+                                  rx_lim_deg=(00, 50),
+                                  ry_lim_deg=(00, 50),
                                   rz_lim_deg=(-180, 180),
-                                  scalex_lim=(0.125/2/1.5, 1.0/8),
-                                  scaley_lim=(0.125/2/1.5, 1.0/8),
+                                  scalex_lim=(1.0/4/3/1.5, 1.0/4/1),
+                                  scaley_lim=(1.0/4/3/1.5, 1.0/4/1),
                                   )
 
     print(len(generator))
@@ -247,7 +274,7 @@ def app():
 
     mx_files = 500
 
-    file_list = sorted(list(os.listdir(directory))[mx_files//2:mx_files])
+    file_list = sorted(list(os.listdir(directory))[8*mx_files:12*mx_files])
 
     '''
     pass the task function, followed by the parameters to processors

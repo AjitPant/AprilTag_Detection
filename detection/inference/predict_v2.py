@@ -21,6 +21,7 @@ from torchvision import datasets, models, transforms
 
 from scipy.spatial import distance as dist
 from scipy import stats
+import pickle
 
 
 import torch
@@ -32,7 +33,7 @@ import math
 from functools import reduce
 
 
-cv_time_wait = 10
+cv_time_wait = 1
 def nonzero_mode(arr):
     return stats.mode(arr[np.nonzero(arr)]).mode
 
@@ -48,7 +49,7 @@ def order_points(pts):
 	return np.array(out, dtype="float32")
 
 
-def reduce_to_tags(net, net_id, img, response_1, response_2,homography_mat, filename, hparams):
+def reduce_to_tags(net, net_id, img, response_1, response_2,homography_mat, filename, hparams, coords_collection):
     global inf_ind
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
@@ -146,55 +147,55 @@ def reduce_to_tags(net, net_id, img, response_1, response_2,homography_mat, file
         assert len(corner_list) == 4
 
 
-        # gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
+        gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
 
-        # # find Harris corners
-        # gray = np.float32(gray)
-        # dst = cv2.cornerHarris(gray,2,3,0.04)
-        # # dst = cv2.dilate(dst,None)
-        # ret, dst = cv2.threshold(dst,0.001*dst.max(),255,0)
-        # dst = np.uint8(dst)
+        # find Harris corners
+        gray = np.float32(gray)
+        dst = cv2.cornerHarris(gray,2,3,0.04)
+        # dst = cv2.dilate(dst,None)
+        ret, dst = cv2.threshold(dst,0.001*dst.max(),255,0)
+        dst = np.uint8(dst)
 
-        # # find centroids
-        # ret, labels, stats, centroids = cv2.connectedComponentsWithStats(dst)
+        # find centroids
+        ret, labels, stats, centroids = cv2.connectedComponentsWithStats(dst)
 
-        # # define the criteria to stop and refine the corners
-        # criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 200, 0.0001)
-        # corners = cv2.cornerSubPix(gray,np.float32(centroids),(5,5),(-1,-1),criteria)
+        # define the criteria to stop and refine the corners
+        criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 200, 0.0001)
+        corners = cv2.cornerSubPix(gray,np.float32(centroids),(5,5),(-1,-1),criteria)
 
-        # # Now draw them
-        # res = np.hstack((centroids,corners))
-        # print(corners)
-
-
-        # real_corner_list = []
-        # for corner in corner_list:
-        #     min_dist = 10000000.0
-        #     closest = []
-        #     for inner_corner in corners:
-        #         dist = (inner_corner[0] - corner[0])**2 + (inner_corner[1] - corner[1])**2
-        #         dist = math.sqrt(dist);
-        #         if(dist<min_dist):
-        #             closest = inner_corner
-        #             min_dist = dist;
-        #     if(min_dist < 0):
-        #         real_corner_list.append(closest);
-        #     else:
-        #         real_corner_list.append(corner);
-        # # corner_list = real_corner_list
+        # Now draw them
+        res = np.hstack((centroids,corners))
+        print(corners)
 
 
+        real_corner_list = []
+        for corner in corner_list:
+            min_dist = 10000000.0
+            closest = []
+            for inner_corner in corners:
+                dist = (inner_corner[0] - corner[0])**2 + (inner_corner[1] - corner[1])**2
+                dist = math.sqrt(dist);
+                if(dist<min_dist):
+                    closest = inner_corner
+                    min_dist = dist;
+            if(min_dist < 0):
+                real_corner_list.append(closest);
+            else:
+                real_corner_list.append(corner);
+        # corner_list = real_corner_list
 
-        # res = np.int0(res)
-        # # img[res[:,1],res[:,0]]=[0,250,255]
-        # # img[res[:,3],res[:,2]] = [0,255,0]
-        # img_clone = img.copy()
-        # for corner in corner_list:
-        #     img_clone[np.int(corner[1]),np.int(corner[0])] =[0,0,255]
 
-        # cv2.namedWindow('subpixel5.png', cv2.WINDOW_NORMAL)
-        # cv2.imshow('subpixel5.png',img_clone)
-        # cv2.waitKey(cv_time_wait)
+
+        res = np.int0(res)
+        # img[res[:,1],res[:,0]]=[0,250,255]
+        # img[res[:,3],res[:,2]] = [0,255,0]
+        img_clone = img.copy()
+        for corner in corner_list:
+            img_clone[np.int(corner[1]),np.int(corner[0])] =[0,0,255]
+
+        cv2.namedWindow('subpixel5.png', cv2.WINDOW_NORMAL)
+        cv2.imshow('subpixel5.png',img_clone)
+        cv2.waitKey(cv_time_wait)
 
         # print(corner_list)
         pad = 30
@@ -283,88 +284,86 @@ def reduce_to_tags(net, net_id, img, response_1, response_2,homography_mat, file
         # parameters.perspectiveRemovePixelPerCell = 10
 
 
-        markerCorners, markerIds, rejectedCandidates = cv2.aruco.detectMarkers(img, dictionary, parameters=parameters)
+        # markerCorners, markerIds, rejectedCandidates = cv2.aruco.detectMarkers(img, dictionary, parameters=parameters)
+        # # markerCorners, markerIds, rejectedCandidates = cv2.aruco.detectMarkers(im1Reg, dictionary, parameters=parameters)
+        # # print(im1Reg)
+        # print(im1Reg.max())
+        # print(im1Reg.min())
 
-        img_make_clone = img.copy()
-        cv2.aruco.drawDetectedMarkers(img_make_clone, markerCorners, markerIds);
+        # print(markerCorners)
+        # print(rejectedCandidates)
+        # pad = pad
+        # if markerCorners is not None and markerIds is not None:
+        #     for corners, id in zip(markerCorners, markerIds):
+        #         print(corners)
+        #         corner = corners[0]
+        #         print(corner)
+        #         h, status = cv2.findHomography(
+        #                     np.array(corner), np.array([[pad, pad], [tag_size-pad, pad], [tag_size-pad, tag_size-pad], [pad, tag_size-pad]]))
+        #         height, width, channels = img.shape
+        #         im1Regg = cv2.warpPerspective(img, h, (tag_size, tag_size))
+        #         # im1Regg = cv2.warpPerspective(im1Reg, h, (tag_size, tag_size))
 
-        cv2.namedWindow('drawDetectedMarkers', cv2.WINDOW_NORMAL)
-        cv2.imshow('drawDetectedMarkers', img_make_clone)
-        cv2.waitKey(cv_time_wait)
+        #         im1Regg[pad,pad] = [0,255,255]
+        #         im1Regg[pad,tag_size-pad] = [0,255,255]
+        #         im1Regg[tag_size-pad,pad] = [0,255,255]
+        #         im1Regg[tag_size-pad,tag_size-pad] = [0,255,255]
 
-        # markerCorners, markerIds, rejectedCandidates = cv2.aruco.detectMarkers(im1Reg, dictionary, parameters=parameters)
-        # print(im1Reg)
-        print(im1Reg.max())
-        print(im1Reg.min())
 
-        print(markerCorners)
-        print(rejectedCandidates)
-        pad = pad
-        if markerCorners is not None and markerIds is not None:
-            for corners, id in zip(markerCorners, markerIds):
-                print(corners)
-                corner = corners[0]
+        #         for corners in corner:
+        #             img_clone[np.int(corners[1]),np.int(corners[0])] =[255,0,255]
+        #         cv2.namedWindow('subpixel_classical.png', cv2.WINDOW_NORMAL)
+        #         cv2.imshow('subpixel_classical.png',img_clone)
+        #         cv2.waitKey(cv_time_wait)
+
+        #         if(id==glb_id):
+
+        #             cv2.putText(im1Regg, "id: "+str(id), (tag_size//2-20, tag_size//2), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,0,255), 2)
+        #             cv2.putText(im1Regg, "tag_used: "+str(inf_ind), (20, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,0,255), 1)
+
+        #             cv2.namedWindow('classical_detection', cv2.WINDOW_NORMAL)
+        #             cv2.imshow('classical_detection', im1Regg)
+        #             cv2.waitKey(cv_time_wait)
+
+
+        #         corner_out = corner
+
+        #         print(corner_list)
+        #         print(corner_out)
+        real_corner_list = []
+        fake_corner_list = []
+        print(coords_collection);
+        for mike_corner in coords_collection:
+            for corner in mike_corner[0]:
+                corner = corner*img.shape[0]
+                min_dist = 10.0
+                closest = []
+                for inner_corner in corner_list:
+                    dist = (inner_corner[0] - corner[0])**2 + (inner_corner[1] - corner[1])**2
+                    dist = math.sqrt(dist);
+                    if(dist<min_dist):
+                        closest = inner_corner
+                        min_dist = dist;
+
+                print(min_dist)
                 print(corner)
-                h, status = cv2.findHomography(
-                            np.array(corner), np.array([[pad, pad], [tag_size-pad, pad], [tag_size-pad, tag_size-pad], [pad, tag_size-pad]]))
-                height, width, channels = img.shape
-                im1Regg = cv2.warpPerspective(img, h, (tag_size, tag_size))
-                # im1Regg = cv2.warpPerspective(im1Reg, h, (tag_size, tag_size))
-
-                im1Regg[pad,pad] = [0,255,255]
-                im1Regg[pad,tag_size-pad] = [0,255,255]
-                im1Regg[tag_size-pad,pad] = [0,255,255]
-                im1Regg[tag_size-pad,tag_size-pad] = [0,255,255]
-
-
-                # for corners in corner:
-                #     img_clone[np.int(corners[1]),np.int(corners[0])] =[255,0,255]
-                # cv2.namedWindow('subpixel_classical.png', cv2.WINDOW_NORMAL)
-                # cv2.imshow('subpixel_classical.png',img_clone)
-                # cv2.waitKey(cv_time_wait)
-
-                if(id==glb_id):
-
-                    cv2.putText(im1Regg, "id: "+str(id), (tag_size//2-20, tag_size//2), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,0,255), 2)
-                    cv2.putText(im1Regg, "tag_used: "+str(inf_ind), (20, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,0,255), 1)
-
-                    cv2.namedWindow('classical_detection', cv2.WINDOW_NORMAL)
-                    cv2.imshow('classical_detection', im1Regg)
-                    cv2.waitKey(cv_time_wait)
-
-
-                corner_out = corner
-
                 print(corner_list)
-                print(corner_out)
-                real_corner_list = []
-                fake_corner_list = []
-                for corner in corner:
-                    min_dist = 10.0
-                    closest = []
-                    for inner_corner in corner_list:
-                        dist = (inner_corner[0] - corner[0])**2 + (inner_corner[1] - corner[1])**2
-                        dist = math.sqrt(dist);
-                        if(dist<min_dist):
-                            closest = inner_corner
-                            min_dist = dist;
-
-                    if(closest != []):
-                        real_corner_list.append(closest);
-                        fake_corner_list.append(corner);
+                if(closest != []):
+                    real_corner_list.append(closest);
+                    fake_corner_list.append(corner);
 
 
-                if len(real_corner_list) == 4:
-                    print(real_corner_list, corner_out)
-                    for p1,p2 in zip(real_corner_list, fake_corner_list  ):
-                        with open("./data_out/data.txt", "a") as diff_file:
+            if len(real_corner_list) == 4:
+                # print(real_corner_list, corner_out)
+                for p1,p2 in zip(real_corner_list, fake_corner_list  ):
+                    with open("./data_out/data.txt", "a") as diff_file:
 
-                            diff_file.write(str(p1[0])+" "+str(p1[1]) + "," + str(p2[0]) + " " + str(p2[1])+"\n")
-                        x_diff = p1[0] - p2[0]
-                        y_diff = p1[1] - p2[1]
-                        with open("./data_out/diff_file_" + str(id) + ".csv", "a") as diff_file:
+                        diff_file.write(str(p1[0])+" "+str(p1[1]) + "," + str(p2[0]) + " " + str(p2[1])+"\n")
+                    x_diff = p1[0] - p2[0]
+                    y_diff = p1[1] - p2[1]
+                    with open("./data_out/diff_file_" + str(id) + ".csv", "a") as diff_file:
 
-                            diff_file.write(str(x_diff) + "," + str(y_diff)+"\n")
+                        diff_file.write(str(x_diff) + "," + str(y_diff)+"\n")
 
 
         # for corners in rejectedCandidates:
@@ -461,7 +460,12 @@ def main(hparams):
     img_list = [str(item) for item in glob.glob(hparams.img)]
 
     for img_str in img_list:
-        im_size = 1024
+        print(img_str)
+        pkl_str = "."+img_str.split('.')[1]  + str('.pkl')
+        with open(pkl_str, 'rb') as f:
+            coords_collection = pickle.load(f)
+
+        im_size = 768
         img = Image.open(img_str).convert('RGB')
 
         width, height = img.size
@@ -514,7 +518,7 @@ def main(hparams):
         # mask = mask.astype(np.uint8)
         _mask = _mask.astype(np.uint8)
         # crop_to_corners(identification_net, img, [_mask, mask], device)
-        reduce_to_tags(net_2, net_id,img, _mask, mask,homography_mat, '.', hparams)
+        reduce_to_tags(net_2, net_id,img, _mask, mask,homography_mat, '.', hparams, coords_collection)
 
 
 
