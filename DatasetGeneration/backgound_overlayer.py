@@ -18,7 +18,7 @@ class backgroundOverlayer(object):
 
 
         corners_collection = []
-        tags_to_overlay = 20
+        tags_to_overlay = 100
         out_response = np.zeros(background_img.shape[:2], dtype = np.uint8)
         real_out_response = np.full((background_img.shape[0],background_img.shape[1], 5),0, dtype = np.uint8)
         real_out_response[:,:,-1] = 255
@@ -44,11 +44,14 @@ class backgroundOverlayer(object):
             response_in_use = result["response_in_use"]
             mask     = result["mask"]
             tag_img  = result["image"]
+
+
             corners_coords = result["corners_uv"]
 
             mask = np.maximum(mask, tag_img)
             _, mask = cv2.threshold(mask, 254, 255, cv2.THRESH_BINARY)
             mask_inv = cv2.bitwise_not(mask)
+
 
             width = tag_img.shape[1]
             height = tag_img.shape[0]
@@ -74,6 +77,7 @@ class backgroundOverlayer(object):
             tag_img = np.clip(tag_img, random.randint(0,10)*10, 255)
             tag_img_masked      = cv2.bitwise_and(tag_img, tag_img, mask = mask)
 
+
             #Find light
             if np.random.uniform(0, 1, 1)[0] > 0.1:
 
@@ -97,6 +101,7 @@ class backgroundOverlayer(object):
 
                 tag_img_masked= cv2.cvtColor(tag_img_view_lab, cv2.COLOR_LAB2BGR)
 
+
             tag_img_masked      = cv2.bitwise_and(tag_img_masked, tag_img, mask = mask)
             background_img_view =  cv2.add(img_masked, tag_img_masked)
 
@@ -109,7 +114,7 @@ class backgroundOverlayer(object):
             if  not cv2.bitwise_and(out_response_view, mask).any():
 
 
-                if np.random.uniform(0, 1, 1)[0] > 1.8:
+                if np.random.uniform(0, 1, 1)[0] > 0.8:
                     blurred_background_img_view = cv2.GaussianBlur(background_img_view, (5, 5), 0)
                     contours, hierarchy = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
                     tmp_mask = np.zeros(background_img_view.shape, dtype = np.uint8)
@@ -155,7 +160,7 @@ class backgroundOverlayer(object):
             background_img = add_noise(background_img, "speckle")
 
         # Motion blur
-        if np.random.uniform(0, 1, 1)[0] > 0.8 :
+        if np.random.uniform(0, 1, 1)[0] > 1.8 :
             size = np.random.randint(3, 7)
             deg = np.random.randint(-180, 180)
             background_img = apply_motion_blur(background_img, size, deg)

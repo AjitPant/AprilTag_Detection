@@ -13,8 +13,8 @@ class DirDataset(Dataset):
         self.img_dir = img_dir
         self.mask_dir = mask_dir
         self.scale = scale
-        original_height = 512
-        original_width = 512
+        original_height = 512*2
+        original_width = 512*2
 
 
         self.aug = A.Compose([
@@ -31,16 +31,16 @@ class DirDataset(Dataset):
                 #                   height=original_height//2, width=original_width//2, p=0.5),
                 A.PadIfNeeded(min_height=original_height,
                               min_width=original_width, p=0.5)
-            ], p=0.5),
+            ], p=0.0),
             A.OneOf([
-                A.Blur(),
-                A.MotionBlur(),
-            ], p=0.1),
+                # A.Blur((5,17), p = 1.0),
+                A.MotionBlur((9,27),p =  1.0),
+            ], p=0.8),
 
             A.OneOf([
                 A.ToGray(),
                 A.CoarseDropout(max_height=10, min_height=2,
-                                max_width=10, min_width=2, min_holes=1, max_holes=10),
+                                max_width=10, min_width=2, min_holes=1, max_holes=20,fill_value=(255,0,255)),
                 A.ChannelDropout(),
             ], p=0.5),
 
@@ -54,13 +54,13 @@ class DirDataset(Dataset):
                 A.RandomRotate90(p=0.9),
                 A.Rotate(limit=180, p=0.9),
             ], p=1.0),
-            A.CLAHE(p=0.8),
+            A.CLAHE(p=0.5),
             A.GaussNoise(),
             A.OneOf([
-                A.RandomSnow(),
+                # A.RandomSnow(p=1.0),
                 A.RandomRain(),
-                A.RandomFog(),
-            ], p=0.5),
+                A.RandomFog( fog_coef_lower = 0.1, fog_coef_upper = 0.3),
+            ], p=0.0),
             A.OneOf([
                 A.RandomShadow(p=0.8, num_shadows_upper=5),
                 A.RandomSunFlare(src_radius=40),
@@ -88,7 +88,7 @@ class DirDataset(Dataset):
             self.ids = []
 
     def __len__(self):
-        return min(50000, len(self.ids))
+        return min(4000, len(self.ids))
 
     def preprocess(self, img, mask=False):
 
@@ -131,6 +131,8 @@ class DirDataset(Dataset):
         img = cv2.imread(img_files[0])
         mask = [cv2.imread(mask_file, cv2.IMREAD_GRAYSCALE)
                 for mask_file in mask_files]
+
+
         # mask[0] = (mask[0] >0).astype(np.uint8)*255
         # mask[1] = (mask[1] >0).astype(np.uint8)*255
         augmented = self.aug(image=img, mask0=mask[0], mask1=mask[1])
@@ -189,13 +191,18 @@ class DirDataset(Dataset):
 
         # # Random horizontal flipping
 
-        # # cv2.imshow("img"+str(i), np.array(img.cpu().numpy().transpose(2, 1, 0)))
+        # cv2.namedWindow("img" +str(i), cv2.WINDOW_NORMAL)
+        # # cv2.namedWindow("mask" +str(i), cv2.WINDOW_NORMAL)
+        # # cv2.namedWindow("mask_1" +str(i), cv2.WINDOW_NORMAL)
+        # cv2.imshow("img"+str(i), np.array(img.cpu().numpy().transpose(2, 1, 0)))
         # # cv2.imshow("mask"+str(i), mask[0].cpu().numpy());
         # # cv2.imshow("mask_1"+str(i), mask[1].cpu().numpy());
-        # # cv2.imshow("mask_2"+str(i), mask[2].cpu().numpy());
-        # # cv2.waitKey(0)
-        # # print(mask.shape)
+
         # # print(img.shape)
+        # # cv2.imshow("mask_2"+str(i), mask[2].cpu().numpy());
+        # cv2.waitKey(0)
+        # print(mask.shape)
+        # print(img.shape)
 
         # # if random.random() > 0.5:
         # #     img = transforms.functional.hflip(img)

@@ -239,7 +239,7 @@ def app():
     parser.add_argument(
         '--size',
         type=int,
-        default=1024,
+        default=1024//2,
         help='Size of April tag images in pixels.')
     parser.add_argument(
        '--mx_tags',
@@ -261,8 +261,8 @@ def app():
                                   rx_lim_deg=(00, 50),
                                   ry_lim_deg=(00, 50),
                                   rz_lim_deg=(-180, 180),
-                                  scalex_lim=(1.0/4/3/1.5, 1.0/4/1),
-                                  scaley_lim=(1.0/4/3/1.5, 1.0/4/1),
+                                  scalex_lim=(1.0/64*4*4, 1.0/32 *4*4),
+                                  scaley_lim=(1.0/64*4*4, 1.0/32 *4*4),
                                   )
 
     print(len(generator))
@@ -274,7 +274,7 @@ def app():
 
     mx_files = 500
 
-    file_list = sorted(list(os.listdir(directory))[8*mx_files:12*mx_files])
+    file_list = sorted(list(os.listdir(directory))[0*mx_files:8*mx_files])
 
     '''
     pass the task function, followed by the parameters to processors

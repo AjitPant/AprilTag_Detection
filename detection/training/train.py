@@ -15,7 +15,7 @@ def main(hparams):
     print(hparams.dataset)
     model = Unet(hparams)
     # if hparams.checkpoint != None:
-        # model = Unet(hparams).load_from_checkpoint(hparams.checkpoint)
+    #     model = Unet(hparams).load_from_checkpoint(hparams.checkpoint)
     model.train()
 
     os.makedirs(hparams.log_dir, exist_ok=True)
@@ -46,9 +46,9 @@ def main(hparams):
         checkpoint_callback=checkpoint_callback,
         early_stop_callback=stop_callback,
         callbacks= [lr_logger],
-        # accumulate_grad_batches=8,
+        accumulate_grad_batches=8,
         resume_from_checkpoint=hparams.checkpoint,
-        benchmark=True,
+        # benchmark=True,
         # overfit_batches=10,
         # val_check_interval=0.250,
         # auto_scale_batch_size='binsearch',
