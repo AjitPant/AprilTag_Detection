@@ -1,4 +1,5 @@
 import os
+import pickle
 from argparse import ArgumentParser
 import glob
 import cv2
@@ -6,7 +7,6 @@ import numpy as np
 import torch
 
 from PIL import Image
-from torchvision import transforms
 import dataset_classifier
 import dataset_classifier_id
 
@@ -19,11 +19,9 @@ from dataset import DirDataset
 from torchvision import datasets, models, transforms
 
 
-from scipy.spatial import distance as dist
 from scipy import stats
 
 
-import torch
 
 
 
@@ -32,15 +30,11 @@ import math
 from functools import reduce
 
 
-cv_time_wait = 1
-def nonzero_mode(arr):
-    return stats.mode(arr[np.nonzero(arr)]).mode
+cv_time_wait = 0
 
 from scipy.spatial import distance as dist
-import numpy as np
-import cv2
-
 inf_ind = 0
+class_ind = 0
 def order_points(pts):
 	coords = pts
 	center = tuple(map(operator.truediv, reduce(lambda x, y: map(operator.add, x, y), coords), [len(coords)] * 2))
@@ -48,8 +42,10 @@ def order_points(pts):
 	return np.array(out, dtype="float32")
 
 
+global_output_corners, global_output_id, global_output_cnter = [], [], []
 def reduce_to_tags(net, net_id, img, response_1, response_2,homography_mat, filename, hparams):
     global inf_ind
+    global class_ind
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
     filename = filename.split('/')[-1]
@@ -57,10 +53,8 @@ def reduce_to_tags(net, net_id, img, response_1, response_2,homography_mat, file
     mask_segmentation = response_1
     mask_corners = response_2
     segregates = []
-    print(mask_corners.max())
-    cv2.waitKey(cv_time_wait)
-    mask_corners =  (mask_corners>0.25).astype(np.uint8)
-    print(mask_corners.shape)
+
+    mask_corners =  (mask_corners>0.125).astype(np.uint8)
 
     kernel = np.ones((5,5),np.uint8)
     mask_segmentation = cv2.erode(mask_segmentation,kernel,iterations = 2)
@@ -73,8 +67,6 @@ def reduce_to_tags(net, net_id, img, response_1, response_2,homography_mat, file
     mask_real_corners = np.zeros(mask_corners.shape[1:], dtype=np.uint8)
 
     mask_real_corners = (mask_corners!=0).astype(np.uint8)
-    print(mask_real_corners)
-    print(mask_real_corners.shape)
 
     cv2.namedWindow('mask_garbage', cv2.WINDOW_NORMAL)
     cv2.imshow("mask_garbage", mask_real_corners.astype(np.float32)*60)
@@ -98,24 +90,22 @@ def reduce_to_tags(net, net_id, img, response_1, response_2,homography_mat, file
     # Initialize the detector parameters using default values
     parameters =  cv2.aruco.DetectorParameters_create()
     parameters.cornerRefinementMethod = cv2.aruco.CORNER_REFINE_APRILTAG
-    # parameters.maxErroneousBitsInBorderRate = 0.8
-    # parameters.errorCorrectionRate = 0.8
-    # parameters.aprilTagMaxLineFitMse = 100
-    # parameters.perspectiveRemoveIgnoredMarginPerCell = 0.43
-    # parameters.perspectiveRemovePixelPerCell = 10
 
 
     markerCorners, markerIds, rejectedCandidates = cv2.aruco.detectMarkers(img, dictionary, parameters=parameters)
 
+    class_ind+=markerIds.shape[0]
+
     with open("./data_out/file_classic_count.txt", "a") as diff_file:
 
         diff_file.write(str(len(markerIds))+"\n")
-    # img_make_clone = img.copy()
-    # cv2.aruco.drawDetectedMarkers(img_make_clone, markerCorners, markerIds);
 
-    # cv2.namedWindow('drawDetectedMarkers', cv2.WINDOW_NORMAL)
-    # cv2.imshow('drawDetectedMarkers', img_make_clone)
-    # cv2.waitKey(cv_time_wait)
+    img_make_clone = img.copy()
+    cv2.aruco.drawDetectedMarkers(img_make_clone, markerCorners, markerIds);
+
+    cv2.namedWindow('drawDetectedMarkers', cv2.WINDOW_NORMAL)
+    cv2.imshow('drawDetectedMarkers', img_make_clone)
+    cv2.waitKey(cv_time_wait)
 
     # gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
 
@@ -137,6 +127,8 @@ def reduce_to_tags(net, net_id, img, response_1, response_2,homography_mat, file
     # res = np.hstack((centroids,corners))
     # print(corners)
 
+
+    output_corners, output_id, output_cnter = [], [], 0
 
     for ind in range(len(contours)):
         segregates = []
@@ -164,14 +156,13 @@ def reduce_to_tags(net, net_id, img, response_1, response_2,homography_mat, file
                 mask_real_corners.shape, dtype=np.uint8)
             cv2.drawContours(internal_internal_mask,
                              internal_contours, inner_ind, 255, -1)
-            internal_internal_mask = cv2.bitwise_and(
-                internal_internal_mask, mask_real_corners.astype(np.uint8))
+            # internal_internal_mask = cv2.bitwise_and(
+            #     internal_internal_mask, mask_real_corners.astype(np.uint8))
 
             # cv2.namedWindow('internal_internal_mask', cv2.WINDOW_NORMAL)
             # cv2.imshow("internal_internal_mask", internal_internal_mask)
             # cv2.waitKey(cv_time_wait)
 
-            mode = map(nonzero_mode, internal_internal_mask)
             #find the center of contours
             M = cv2.moments(internal_contours[inner_ind])
             cX = (M["m10"] / (M["m00"]+1e-18))
@@ -187,14 +178,14 @@ def reduce_to_tags(net, net_id, img, response_1, response_2,homography_mat, file
         if len(_segregates) <=2:
             continue
 
-        print(_segregates)
+        # print(_segregates)
 
         hull = cv2.convexHull(np.array(_segregates))
         t_segregates = []
 
         epsilon = 0.05*cv2.arcLength(hull,True)
         hull = cv2.approxPolyDP(hull,epsilon,True)
-        print(hull)
+        # print(hull)
         print(segregates)
 
         for p in hull:
@@ -257,15 +248,15 @@ def reduce_to_tags(net, net_id, img, response_1, response_2,homography_mat, file
         # print(corner_list)
 
 
-        # pad = 30
-        # tag_size = 224
-        # h, status = cv2.findHomography(
-        #     np.array(corner_list), np.array([[pad, pad], [pad, tag_size-pad],[tag_size-pad, tag_size-pad],  [tag_size-pad, 0+pad]]))
-        # # corner_list = np.array([[pad, pad], [pad, tag_size-pad],[tag_size-pad, tag_size-pad],  [tag_size-pad, 0+pad]])
+        pad = 30
+        tag_size = 224
+        h, status = cv2.findHomography(
+            np.array(corner_list), np.array([[pad, pad], [pad, tag_size-pad],[tag_size-pad, tag_size-pad],  [tag_size-pad, 0+pad]]))
+        # corner_list = np.array([[pad, pad], [pad, tag_size-pad],[tag_size-pad, tag_size-pad],  [tag_size-pad, 0+pad]])
 
-        # height, width, channels = img.shape
+        height, width, channels = img.shape
 
-        # im1Reg = cv2.warpPerspective(img, h, (tag_size, tag_size))
+        im1Reg = cv2.warpPerspective(img, h, (tag_size, tag_size))
 
         # # cv2.namedWindow('unrotated_tag', cv2.WINDOW_NORMAL)
         # # cv2.imshow('unrotated_tag', im1Reg)
@@ -281,57 +272,58 @@ def reduce_to_tags(net, net_id, img, response_1, response_2,homography_mat, file
         # # cv2.imshow('threshold_tag', im1Reg)
         # # cv2.waitKey(cv_time_wait)
 
-        # im2Reg = Image.fromarray(im1Reg)
+        im2Reg = Image.fromarray(im1Reg)
 
-        # ds = dataset_classifier.DirDataset('', '')
-        # im2Reg = (ds.preprocess(im2Reg))
-        # out = net(im2Reg.unsqueeze(0).to(device))
-        # print(out)
-        # rotation = ((np.argmax(out.squeeze(0).cpu())+2)*-90).item()
-        # print(rotation)
+        ds = dataset_classifier.DirDataset('', '')
+        im2Reg = (ds.preprocess(im2Reg))
+        out = net(im2Reg.unsqueeze(0).to(device))
+        print(out)
+        rotation = ((np.argmax(out.squeeze(0).cpu())+2)*-90).item()
+        print(rotation)
 
-        # (h, w) = im1Reg.shape[:2]
+        (h, w) = im1Reg.shape[:2]
 
-        # # calculate the center of the image
-        # center = (w / 2, h / 2)
-        # scale = 1
+        # calculate the center of the image
+        center = (w / 2, h / 2)
+        scale = 1
 
-        # M = cv2.getRotationMatrix2D(center, rotation, scale)
-        # im3Reg = cv2.warpAffine(im1Reg, M, (h, w))
+        M = cv2.getRotationMatrix2D(center, rotation, scale)
+        im3Reg = cv2.warpAffine(im1Reg, M, (h, w))
 
         # # cv2.namedWindow('rotated_tag', cv2.WINDOW_NORMAL)
         # # cv2.imshow('rotated_tag', im3Reg)
         # # cv2.waitKey(cv_time_wait)
 
-        # im31Reg = Image.fromarray(im1Reg)
+        im31Reg = Image.fromarray(im1Reg)
 
-        # ds = dataset_classifier_id.DirDataset('', '')
-        # im31Reg = (ds.preprocess(im31Reg))
-        # out = net_id(im31Reg.unsqueeze(0).to(device))
+        ds = dataset_classifier_id.DirDataset('', '')
+        im31Reg = (ds.preprocess(im31Reg))
+        out = net_id(im31Reg.unsqueeze(0).to(device))
 
-        # glb_id = ((np.argmax(out.squeeze(0).cpu()))).item()
-        # if(torch.softmax(out,dim = 1)[0][glb_id]<0.5):
-        #     continue;
+        glb_id = ((np.argmax(out.squeeze(0).cpu()))).item()
+        if(torch.softmax(out,dim = 1)[0][glb_id]<0.5):
+            continue;
 
-        # if( glb_id == 587):
-        #     continue
+        if( glb_id == 587):
+            continue
         inf_ind+=1
         print(inf_ind)
         with open("./data_out/file_n.txt", "a") as diff_file:
 
             diff_file.write(str(inf_ind)+"\n")
 
-        # cv2.putText(im3Reg, "id: "+str(glb_id), (tag_size//2-20, tag_size//2), cv2.FONT_HERSHEY_SIMPLEX, 1, (100,255,100), 2)
-        # cv2.putText(im3Reg, "tag_used: "+str(inf_ind), (20, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,0,255), 1)
+        cv2.putText(im3Reg, "id: "+str(glb_id), (tag_size//2-20, tag_size//2), cv2.FONT_HERSHEY_SIMPLEX, 1, (100,255,100), 2)
+        cv2.putText(im3Reg, "tag_used: "+str(inf_ind), (20, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,0,255), 1)
+        cv2.putText(im3Reg, "class_ind: "+str(class_ind), (100, 100), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,0,255), 1)
 
-        # im3Reg[pad,pad] = [0,255,255]
-        # im3Reg[pad,tag_size-pad] = [0,255,255]
-        # im3Reg[tag_size-pad,pad] = [0,255,255]
-        # im3Reg[tag_size-pad,tag_size-pad] = [0,255,255]
+        im3Reg[pad,pad] = [0,255,255]
+        im3Reg[pad,tag_size-pad] = [0,255,255]
+        im3Reg[tag_size-pad,pad] = [0,255,255]
+        im3Reg[tag_size-pad,tag_size-pad] = [0,255,255]
 
-        # cv2.namedWindow('Unet-prediction', cv2.WINDOW_NORMAL)
-        # cv2.imshow('Unet-prediction', im3Reg)
-        # cv2.waitKey(cv_time_wait)
+        cv2.namedWindow('Unet-prediction', cv2.WINDOW_NORMAL)
+        cv2.imshow('Unet-prediction', im3Reg)
+        cv2.waitKey(cv_time_wait)
 
 
 
@@ -347,15 +339,11 @@ def reduce_to_tags(net, net_id, img, response_1, response_2,homography_mat, file
         # pad = pad
         if markerCorners is not None and markerIds is not None:
             for corners, id in zip(markerCorners, markerIds):
-                print(corners)
                 corner = corners[0]
-                print(corner)
 
 
                 corner_out = corner
 
-                print(corner_list)
-                print(corner_out)
                 real_corner_list = []
                 fake_corner_list = []
                 for corner in corner:
@@ -372,22 +360,28 @@ def reduce_to_tags(net, net_id, img, response_1, response_2,homography_mat, file
                         real_corner_list.append(closest);
                         fake_corner_list.append(corner);
 
-
                 if len(real_corner_list) == 4:
-                    print(real_corner_list, corner_out)
-                    for p1,p2 in zip(real_corner_list, fake_corner_list  ):
-                        with open("./data_out/data.txt", "a") as diff_file:
+                    output_cnter+=1
+                    output_corners.append(real_corner_list)
+                    # output_corners.append(fake_corner_list)
+                    output_id.append(id)
 
-                            diff_file.write(str(p1[0])+","+str(p1[1]) + "," + str(p2[0]) + "," + str(p2[1]) + ","+ str(id)[1:-1]+"," + str(p2[0]-p1[0])+"," + str(p2[1]-p1[1]) +"\n")
-                        x_diff = p1[0] - p2[0]
-                        y_diff = p1[1] - p2[1]
-                        with open("./data_out/diff_file_" + str(id) + ".csv", "a") as diff_file:
 
-                            diff_file.write(str(p1[0])+","+str(p1[1]) + "," + str(p2[0]) + "," + str(p2[1]) + ","+ str(id)[1:-1]+"," + str(p2[0]-p1[0])+"," + str(p2[1]-p1[1]) +"\n")
+        #         if len(real_corner_list) == 4:
+        #             print(real_corner_list, corner_out)
+        #             for p1,p2 in zip(real_corner_list, fake_corner_list  ):
+        #                 with open("./data_out/data.txt", "a") as diff_file:
 
-                        with open("./data_out/img/" + filename + ".csv", "a") as diff_file:
+        #                     diff_file.write(str(p1[0])+","+str(p1[1]) + "," + str(p2[0]) + "," + str(p2[1]) + ","+ str(id)[1:-1]+"," + str(p2[0]-p1[0])+"," + str(p2[1]-p1[1]) +"\n")
+        #                 x_diff = p1[0] - p2[0]
+        #                 y_diff = p1[1] - p2[1]
+        #                 with open("./data_out/diff_file_" + str(id) + ".csv", "a") as diff_file:
 
-                            diff_file.write(str(p1[0])+","+str(p1[1]) + "," + str(p2[0]) + "," + str(p2[1]) + ","+ str(id)[1:-1]+"," + str(p2[0]-p1[0])+"," + str(p2[1]-p1[1]) +"\n")
+        #                     diff_file.write(str(p1[0])+","+str(p1[1]) + "," + str(p2[0]) + "," + str(p2[1]) + ","+ str(id)[1:-1]+"," + str(p2[0]-p1[0])+"," + str(p2[1]-p1[1]) +"\n")
+
+        #                 with open("./data_out/img/" + filename + ".csv", "a") as diff_file:
+
+        #                     diff_file.write(str(p1[0])+","+str(p1[1]) + "," + str(p2[0]) + "," + str(p2[1]) + ","+ str(id)[1:-1]+"," + str(p2[0]-p1[0])+"," + str(p2[1]-p1[1]) +"\n")
 
 
 
@@ -405,10 +399,13 @@ def reduce_to_tags(net, net_id, img, response_1, response_2,homography_mat, file
         #     print(f"{mask_corners[int(corner_list[0][1])][int(corner_list[0][0])]}", file=text_file)
 
         index = index + 1
+    global_output_cnter.append(output_cnter)
+    global_output_corners.append(output_corners)
+    global_output_id.append(output_id)
 
 
 
-def predict(net, img, device='cuda', threshold=0.5, kernel = 768, stride =512):
+def predict(net, img, device='cuda', threshold=0.125, kernel = 1024, stride =768):
     with torch.no_grad():
         ds = DirDataset('', '')
         _img = (ds.preprocess(img))
@@ -458,26 +455,16 @@ def mask_to_image(mask):
 def main(hparams):
     with torch.no_grad():
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
+        print("outmark")
         net = Unet.load_from_checkpoint(hparams.checkpoint)
+        print("outmark_done")
         # net.freeze()
         net.to(device)
         net.eval()
 
-        net_12 = Unet.load_from_checkpoint(hparams.checkpoint_2)
-        # net.freeze()
-        net_12.to(device)
-        net_12.eval()
 
-        #Load the identification network
-        # model_ft = models.resnet18(pretrained=True)
-        # num_ftrs = model_ft.fc.in_features
-        # # Here the size of each output sample is set to 2.
-        # # Alternatively, it can be generalized to nn.Linear(num_ftrs, len(class_names)).
-        # model_ft.fc = nn.Linear(num_ftrs, 587)
 
-        # identification_net = model_ft.to(device)
-        # identification_net.load_state_dict(torch.load(hparams.id_net))
-        # identification_net.eval()
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
         print(hparams.id_net)
         net_2 = Resnet.load_from_checkpoint(hparams.id_net)
@@ -492,7 +479,7 @@ def main(hparams):
         img_list = [str(item) for item in glob.glob(hparams.img)]
 
         for img_str in img_list:
-            im_size = 1024//2+0*1024 + 0*256//2
+            im_size = 1024+1*1024 + 0*256//2
             img = Image.open(img_str).convert('RGB')
 
             width, height = img.size
@@ -510,10 +497,10 @@ def main(hparams):
             img = Image.fromarray(open_cv_image)
 
             mask, _mask = predict(net, img, device=device)
-            mask_2, _mask_2 = predict(net_12, img, device=device)
+            # mask_2, _mask_2 = predict(net_12, img, device=device)
 
-            mask = np.maximum(mask, mask_2)
-            _mask = np.maximum(_mask, _mask_2)
+            # mask = np.maximum(mask, mask_2)
+            # _mask = np.maximum(_mask, _mask_2)
 
 
 
@@ -528,16 +515,20 @@ def main(hparams):
 
 
 
+    with open('outputs/unet_corner_id_cnt_2048.pkl', "wb") as f:
+        pickle.dump((global_output_corners, global_output_id, global_output_cnter), f)
 if __name__ == '__main__':
+    print("hi")
     parent_parser = ArgumentParser(add_help = False)
     parent_parser.add_argument('--checkpoint', required=True, help = "Network for segmentation")
-    parent_parser.add_argument('--checkpoint_2', required=True, help = "Network for segmentation")
     parent_parser.add_argument('--id_net', required=True, help = "Network for corner classification")
     parent_parser.add_argument('--id_classifier_net', required=True, help = "Network for tag classification")
     # parent_parser.add_argument('--fit_out_net', required=True, help = "Network for tag classification")
     parent_parser.add_argument('--img', required=True, type = str)
 
+    print("hi")
     parser = Unet.add_model_specific_args(parent_parser)
     hparams = parser.parse_args()
+    print("hi")
 
     main(hparams)
