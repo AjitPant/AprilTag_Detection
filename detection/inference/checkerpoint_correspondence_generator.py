@@ -1,55 +1,92 @@
 import numpy as np
 import pickle
-import cv2 as cv
+import cv2
 import glob
-# termination criteria
-criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 30, 0.001)
-# prepare object points, like (0,0,0), (1,0,0), (2,0,0) ....,(6,5,0)
-objp = np.zeros((6*9,3), np.float32)
-objp[:,:2] = np.mgrid[0:9,0:6].T.reshape(-1,2)
-# Arrays to store object points and image points from all the images.
-objpoints = [] # 3d point in real world space
-imgpoints = [] # 2d points in image plane.
-images = glob.glob('img/Calibration_test1_9x6_checker_22.9mm/*.jpg')
+import os
+import argparse
 
-# cv.namedWindow('img', cv.WINDOW_NORMAL)
-for ind, fname in enumerate(images):
-    if(ind >=1):
-        break
-    print(ind, fname)
-    img = cv.imread(fname)
-    gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
-    # Find the chess board corners
-    print('before find')
-    ret, corners = cv.findChessboardCorners(gray, (9,6), None)
-    print('after find')
-    # If found, add object points, image points (after refining them)
-    if ret == True:
-        print('in find')
-        objpoints.append(objp)
-        corners2 = cv.cornerSubPix(gray,corners, (11,11), (-1,-1), criteria)
-        imgpoints.append(corners)
-        # Draw and display the corners
-        print('before draw')
-        cv.drawChessboardCorners(img, (9,6), corners2, ret)
-        print('after draw')
-        # cv.imshow('img', img)
-        # cv.waitKey(0)
-cv.destroyAllWindows()
 
-print(objpoints)
-print(imgpoints)
+def process(args):
+    ncols = args.nsquare_x - 1
+    nrows = args.nsquare_y - 1
 
-params = (objpoints, imgpoints, gray.shape[::-1])
+    # termination criteria
+    criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
 
-with open('outputs/objpoints_imgpoints_gray-shape.pkl', 'wb') as f:
-   pickle.dump(params, f)
+    # prepare object points, like (0,0,0), (1,0,0), (2,0,0) ....,(6,5,0)
+    objpts = np.zeros((ncols * nrows, 3), np.float32)
+    objpts[:, :2] = np.mgrid[0:ncols, 0:nrows].T.reshape(-1, 2)
 
-print("abc")
+    # Arrays to store object points and image points from all the images.
+    objpts_list = list()  # 3d point in real world space
+    imgpts_list = list()  # 2d points in image plane.
+    images = glob.glob(os.path.join(args.images_dir, "*.jpg"))
 
-ret, mtx, dist, rvecs, tvecs = cv.calibrateCamera(objpoints, imgpoints, gray.shape[::-1],cameraMatrix=None,  distCoeffs=np.zeros((5,)), flags=cv.CALIB_FIX_K5)
+    for i, filename in enumerate(images):
+        print("{0}) Reading {1}".format(i + 1, filename))
+        image = cv2.imread(filename)
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
-print("hi")
-# print(reprojectionError)
-print(ret, mtx, dist, rvecs, tvecs)
-print("hixxx")
+        # Find the chess board corners
+        ret, corners = cv2.findChessboardCorners(gray, (ncols, nrows), None)
+
+        # If found, add object points, image points (after refining them)
+        if ret:
+            objpts_list.append(objpts)
+            refined_corners = cv2.cornerSubPix(gray, corners, (11, 11), (-1, -1), criteria)
+            imgpts_list.append(refined_corners)
+            if args.visualize:
+                # Draw and display the corners
+                scale = 0.25
+                draw = cv2.resize(image, None, fx=scale, fy=scale)
+                draw = cv2.drawChessboardCorners(draw, (ncols, nrows), refined_corners * scale, ret)
+                cv2.namedWindow(filename, cv2.WINDOW_NORMAL)
+                cv2.imshow(filename, draw)
+                cv2.waitKey(0)
+
+    if args.visualize:
+        cv2.destroyAllWindows()
+
+    if args.output_dir is not None:
+        with open(os.path.join(args.output_dir, "data.pkl"), "wb") as f:
+            data = (objpts_list, imgpts_list, gray.shape[::-1])
+            pickle.dump(data, f)
+
+    ret, camera_matrix, dist_coeffs, rvecs, tvecs = cv2.calibrateCamera(objpts_list, imgpts_list, gray.shape[::-1], None, None, flags=cv2.CALIB_FIX_K3)
+    print("camera matrix: {}".format(camera_matrix))
+    print("distortion coefficients: {}".format(dist_coeffs))
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        '--images_dir',
+        type=str,
+        required=True,
+        help="Directory contains images.")
+    parser.add_argument(
+        '--output_dir',
+        type=str,
+        default=None,
+        help="Directory to save results.")
+    parser.add_argument(
+        '--nsquare_x',
+        type=int,
+        default=10,
+        help="Number of squares in x direction.")
+    parser.add_argument(
+        '--nsquare_y',
+        type=int,
+        default=7,
+        help="Number of squares in y direction.")
+    parser.add_argument(
+        '--visualize',
+        type=bool,
+        default=False,
+        help="Visualize detected checkerboard corners.")
+    args = parser.parse_args()
+    process(args)
+
+
+if __name__ == '__main__':
+    main()
