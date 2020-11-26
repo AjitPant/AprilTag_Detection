@@ -1,5 +1,6 @@
 import os
 import pickle
+from torch import nn
 from argparse import ArgumentParser
 import glob
 import cv2
@@ -30,7 +31,7 @@ import math
 from functools import reduce
 
 
-cv_time_wait = 0
+cv_time_wait = 1
 
 from scipy.spatial import distance as dist
 inf_ind = 0
@@ -43,7 +44,7 @@ def order_points(pts):
 
 
 global_output_corners, global_output_id, global_output_cnter = [], [], []
-def reduce_to_tags(net, net_id, img, response_1, response_2,homography_mat, filename, hparams):
+def reduce_to_tags(net, net_id, img, response_1, response_2, filename, hparams):
     global inf_ind
     global class_ind
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -96,9 +97,6 @@ def reduce_to_tags(net, net_id, img, response_1, response_2,homography_mat, file
 
     class_ind+=markerIds.shape[0]
 
-    with open("./data_out/file_classic_count.txt", "a") as diff_file:
-
-        diff_file.write(str(len(markerIds))+"\n")
 
     img_make_clone = img.copy()
     cv2.aruco.drawDetectedMarkers(img_make_clone, markerCorners, markerIds);
@@ -178,14 +176,12 @@ def reduce_to_tags(net, net_id, img, response_1, response_2,homography_mat, file
         if len(_segregates) <=2:
             continue
 
-        # print(_segregates)
 
         hull = cv2.convexHull(np.array(_segregates))
         t_segregates = []
 
         epsilon = 0.05*cv2.arcLength(hull,True)
         hull = cv2.approxPolyDP(hull,epsilon,True)
-        # print(hull)
         print(segregates)
 
         for p in hull:
@@ -194,7 +190,6 @@ def reduce_to_tags(net, net_id, img, response_1, response_2,homography_mat, file
                     t_segregates.append(x);
 
         segregates = t_segregates
-        print(segregates)
 
         # if len(segregates) < 4:
         #     continue
@@ -277,9 +272,7 @@ def reduce_to_tags(net, net_id, img, response_1, response_2,homography_mat, file
         ds = dataset_classifier.DirDataset('', '')
         im2Reg = (ds.preprocess(im2Reg))
         out = net(im2Reg.unsqueeze(0).to(device))
-        print(out)
         rotation = ((np.argmax(out.squeeze(0).cpu())+2)*-90).item()
-        print(rotation)
 
         (h, w) = im1Reg.shape[:2]
 
@@ -329,14 +322,7 @@ def reduce_to_tags(net, net_id, img, response_1, response_2,homography_mat, file
 
 
 
-        # markerCorners, markerIds, rejectedCandidates = cv2.aruco.detectMarkers(im1Reg, dictionary, parameters=parameters)
-        # print(im1Reg)
-        # print(im1Reg.max())
-        # print(im1Reg.min())
 
-        # print(markerCorners)
-        # print(rejectedCandidates)
-        # pad = pad
         if markerCorners is not None and markerIds is not None:
             for corners, id in zip(markerCorners, markerIds):
                 corner = corners[0]
@@ -399,20 +385,19 @@ def reduce_to_tags(net, net_id, img, response_1, response_2,homography_mat, file
         #     print(f"{mask_corners[int(corner_list[0][1])][int(corner_list[0][0])]}", file=text_file)
 
         index = index + 1
+
     global_output_cnter.append(output_cnter)
     global_output_corners.append(output_corners)
     global_output_id.append(output_id)
 
 
 
-def predict(net, img, device='cuda', threshold=0.125, kernel = 1024, stride =768):
+def predict(net, img, device='cuda', threshold=0.25, kernel =768, stride =512):
     with torch.no_grad():
         ds = DirDataset('', '')
         _img = (ds.preprocess(img))
 
 
-        # cv2.imshow("predict", _img.cpu().numpy().transpose((2, 1, 0)))
-        # cv2.waitKey(cv_time_wait)
         _img = _img.unsqueeze(0)
         _img = _img.to(device=device, dtype=torch.float32)
 
@@ -425,26 +410,32 @@ def predict(net, img, device='cuda', threshold=0.125, kernel = 1024, stride =768
             for start_row in range(0,rows, stride):
                 for start_col in range(0,cols,stride):
 
-                    patch = _img[:,:, start_row:start_row+kernel, start_col:start_col+kernel ]
+                    patch = _img[:,:, start_row:start_row+kernel, start_col:start_col+kernel]
+
+                    patch_height, patch_width = patch.shape[2:]
+                    m = nn.ZeroPad2d((0,  max(0, kernel - patch.shape[3]) , 0, max(0, kernel -patch.shape[2])))
+                    print(patch.shape)
+                    patch = m(patch)
+                    print(patch.shape)
                     o = net(patch)
 
                     _o = o[:, 1, :, :]
                     o = o[:, :1,:,:]
 
-                    # probs = torch.nn.functional.softmax(o, dim=1)
-                    print(o.shape)
                     probs = torch.sigmoid(o)
-                    print(o.max())
-                    print(probs.shape)
                     probs = probs.squeeze(0)
                     mask_patch = probs
 
                     _probs = torch.sigmoid(_o)
                     _probs = _probs.squeeze(0)
                     _mask_patch = _probs
+                    print(mask_patch.shape)
+                    print(_mask_patch.shape)
+                    print(mask_patch[:patch_height, :patch_width].shape)
+                    print(_mask_patch[:patch_height, :patch_width].shape)
 
-                    mask[start_row:start_row+kernel, start_col:start_col+kernel] = torch.max(mask[start_row:start_row+kernel, start_col:start_col+kernel], mask_patch);
-                    _mask[start_row:start_row+kernel, start_col:start_col+kernel] = torch.max(_mask[start_row:start_row+kernel, start_col:start_col+kernel], _mask_patch);
+                    mask[start_row:start_row+kernel, start_col:start_col+kernel] = torch.max(mask[start_row:start_row+kernel, start_col:start_col+kernel], mask_patch[:, :patch_height, :patch_width]);
+                    _mask[start_row:start_row+kernel, start_col:start_col+kernel] = torch.max(_mask[start_row:start_row+kernel, start_col:start_col+kernel], _mask_patch[:patch_height, :patch_width]);
         return (mask.cpu().numpy(), _mask.cpu().numpy() > threshold )
 
 
@@ -479,17 +470,13 @@ def main(hparams):
         img_list = [str(item) for item in glob.glob(hparams.img)]
 
         for img_str in img_list:
-            im_size = 1024+1*1024 + 0*256//2
+            # im_size = 1024+1*1024 + 0*256//2
             img = Image.open(img_str).convert('RGB')
 
             width, height = img.size
-            # width, height = (im_size, im_size)
 
 
-            homography_mat, status = cv2.findHomography(
-                np.array([[0, 0], [0, im_size], [im_size, im_size], [im_size, 0]]),
-                np.array([[0, 0], [0, width], [height, width], [height, 0]]))
-            img = img.resize((im_size, im_size))
+            # img = img.resize((im_size, im_size))
             open_cv_image = np.array(img)
             # Convert RGB to BGR
             open_cv_image = open_cv_image[:, :, ::-1].copy()
@@ -497,26 +484,18 @@ def main(hparams):
             img = Image.fromarray(open_cv_image)
 
             mask, _mask = predict(net, img, device=device)
-            # mask_2, _mask_2 = predict(net_12, img, device=device)
-
-            # mask = np.maximum(mask, mask_2)
-            # _mask = np.maximum(_mask, _mask_2)
-
-
 
             img = np.array(img)
 
-            # print(img.dtype)
-
             # mask = mask.astype(np.uint8)
             _mask = _mask.astype(np.uint8)
-            # crop_to_corners(identification_net, img, [_mask, mask], device)
-            reduce_to_tags(net_2, net_id,img, _mask, mask,homography_mat, img_str, hparams)
+
+            reduce_to_tags(net_2, net_id,img, _mask, mask, img_str, hparams)
 
 
 
-    with open('outputs/unet_corner_id_cnt_2048.pkl', "wb") as f:
-        pickle.dump((global_output_corners, global_output_id, global_output_cnter), f)
+    with open('outputs/unet_corner_direct.pkl', "wb") as f:
+        pickle.dump((global_output_corners, global_output_id, global_output_cnter, img.shape), f)
 if __name__ == '__main__':
     print("hi")
     parent_parser = ArgumentParser(add_help = False)

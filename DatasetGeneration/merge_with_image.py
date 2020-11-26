@@ -46,29 +46,10 @@ def reduce_to_tags(img, response_1, response_2,response_id, filename, args):
     mask_corners = response_2
     segregates = []
     mask_corners =  np.argmax(mask_corners, axis=2)
-    # assert((mask_corners==1).any())
-
-    # cv2.namedWindow('mask_corners', cv2.WINDOW_NORMAL)
-    # cv2.imshow("mask_corners", response_id[:,:,0])
-    # cv2.waitKey(0)
-
-    # cv2.namedWindow('mask_garbage_0', cv2.WINDOW_NORMAL)
-    # cv2.namedWindow('mask_garbage_1', cv2.WINDOW_NORMAL)
-    # cv2.namedWindow('mask_garbage_2', cv2.WINDOW_NORMAL)
-    # cv2.namedWindow('mask_garbage_3', cv2.WINDOW_NORMAL)
-    # cv2.namedWindow('mask_garbage_4', cv2.WINDOW_NORMAL)
 
     mask_real_corners = np.zeros(mask_corners.shape[1:], dtype=np.uint8)
-    # print(mask_corners.max())
-    # for i in range(4):
-    #     mask_real_corners +=mask_corners[i]*(i+1)
-    mask_real_corners = (mask_corners!=4).astype(np.uint8)
-    # mask_real_corners = 4- np.argmax(mask_corners, axis = 0).astype(np.uint8)
-    # print(mask_real_corners)
 
-    # cv2.namedWindow('mask_garbage', cv2.WINDOW_NORMAL)
-    # cv2.imshow("mask_garbage", mask_real_corners.astype(np.float32)*60)
-    # cv2.waitKey(0)
+    mask_real_corners = (mask_corners!=4).astype(np.uint8)
 
     contours, _ = cv2.findContours(
         mask_segmentation, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
@@ -78,9 +59,6 @@ def reduce_to_tags(img, response_1, response_2,response_id, filename, args):
 
     cv2.drawContours(temp_img, contours, -1, (0, 255, 0), 3)
 
-    # cv2.namedWindow('contours_img', cv2.WINDOW_NORMAL)
-    # cv2.imshow("contours_img", temp_img)
-    # cv2.waitKey(0)
     index = 0
 
     for ind in range(len(contours)):
@@ -89,18 +67,12 @@ def reduce_to_tags(img, response_1, response_2,response_id, filename, args):
 
         cv2.drawContours(internal_mask, contours, ind, 255, -1)
 
-        # cv2.namedWindow('internal_mask', cv2.WINDOW_NORMAL)
-        # cv2.imshow("internal_mask", internal_mask)
-        # cv2.waitKey(0)
-        # print("hello")
         internal_mask = cv2.bitwise_and(
             internal_mask, mask_real_corners.astype(np.uint8))
-        # print("heello")
 
         internal_contours, _ = cv2.findContours(
             internal_mask, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
-        # print("heeello")
-        # print(len(internal_contours))
+
         for inner_ind in range(len(internal_contours)):
             internal_internal_mask = np.zeros(
                 mask_real_corners.shape, dtype=np.uint8)
@@ -115,18 +87,18 @@ def reduce_to_tags(img, response_1, response_2,response_id, filename, args):
             cX = int(M["m10"] / (M["m00"]+1e-9))
             cY = int(M["m01"] / (M["m00"]+1e-9))
             segregates.append([cX, cY])
-        # print(segregates)
+
         if len(segregates) != 4:
             continue
         segregates = order_points(segregates)
-        # print(len(segregates))
+
         if len(segregates) != 4:
             continue
 
 
 
         corner_list = []
-        # print(segregates)
+
         for i in segregates:
             corner_list.append((i[0], i[1]))
 
@@ -145,22 +117,6 @@ def reduce_to_tags(img, response_1, response_2,response_id, filename, args):
             np.array(corner_list), np.array([[0+rand1, 0+rand2], [0+rand3, 224-rand4], [224-rand5, 224-rand6], [224-rand7, 0+rand8]]))
         height, width, channels = img.shape
         im1Reg = cv2.warpPerspective(img, h, (224, 224))
-        # cv2.namedWindow('a', cv2.WINDOW_NORMAL)
-        # cv2.imshow('a', im1Reg)
-        # cv2.waitKey(0)
-        # print(corner_list)
-
-        # cv2.imwrite(os.path.join(args.out_folder, 'simg',
-        #                          filename[:-4] + "_" + str(index) + '.jpg'), im1Reg)
-
-        # print(f"{mask_corners[int(corner_list[0][1])][int(corner_list[0][0])]}")
-
-        # # cnt[mask_corners[int(corner_list[0][1])][int(corner_list[0][0])]] +=1
-        # # print(cnt);
-        # if mask_corners[int(corner_list[0][1])][int(corner_list[0][0])] == 4:
-        #     assert(False)
-        # with open(os.path.join(args.out_folder, 'simg',filename[:-4] + "_" + str(index) + '.txt'), "w") as text_file:
-        #     print(f"{mask_corners[int(corner_list[0][1])][int(corner_list[0][0])]}", file=text_file)
 
 
         label = response_id[int(corner_list[0][1]), int(corner_list[0][0]), 0]
@@ -192,11 +148,10 @@ def augment_and_save(file, overlayer, args):
 
             img = cv2.resize(img, (512*2, 512*2))
             img_out, response_1, response_2, response_3 ,response_id, corners_collection = overlayer(img)
-            # reduce_to_tags(img_out, response_1, response_3,response_id, filename, args)
 
-            img_out = cv2.resize(img_out ,(512//1, 512//1), interpolation=cv2.INTER_AREA)
-            response_1 = cv2.resize(response_1, (512//1, 512//1), interpolation=cv2.INTER_AREA)
-            response_2 = cv2.resize(response_2, (512//1, 512//1), interpolation=cv2.INTER_AREA)
+            # img_out = cv2.resize(img_out ,(512//2, 512//1), interpolation=cv2.INTER_AREA)
+            # response_1 = cv2.resize(response_1, (512//2, 512//1), interpolation=cv2.INTER_AREA)
+            # response_2 = cv2.resize(response_2, (512//2, 512//1), interpolation=cv2.INTER_AREA)
             cv2.imwrite(os.path.join(args.out_folder, 'img',
                                      filename[:-4] + "_" + str(j) + '.jpg'), img_out)
             cv2.imwrite(os.path.join(args.out_folder, 'mask',
@@ -253,8 +208,6 @@ def app():
     os.makedirs(os.path.join(args.out_folder, 'simg'), exist_ok=True)
     os.makedirs(os.path.join(args.out_folder, 'ssimg'), exist_ok=True)
 
-    # logger = multiprocessing.log_to_stderr()
-    # logger.setLevel(multiprocessing.SUBDEBUG)
     generator = AprilTagGenerator(root=args.root,
                                   family=args.family,
                                   size=args.size,
@@ -272,9 +225,9 @@ def app():
 
     n_processors = 4
 
-    mx_files = 500
+    mx_files = 100
 
-    file_list = sorted(list(os.listdir(directory))[0*mx_files:8*mx_files])
+    file_list = sorted(list(os.listdir(directory))[0*mx_files:1*mx_files])
 
     '''
     pass the task function, followed by the parameters to processors

@@ -1,72 +1,135 @@
 """
 This code assumes that images used for calibration are of the same arUco marker board provided with code
 """
-
 import cv2
-from cv2 import aruco
 import pickle
 import numpy as np
 from pathlib import Path
 from tqdm import tqdm
-
-# root directory of repo for relative path specification.
-root = Path(__file__).parent.absolute()
-# resize_shape = (1024*2 , 1024*2)
-
-# Set path to the images
-calib_imgs_path = root.joinpath("img/Calibrate_5x5_1")
-
-# For validating results, show aruco board to camera.
-aruco_dict = aruco.getPredefinedDictionary( aruco.DICT_APRILTAG_36h11 )
-
-#Provide length of the marker's side
-markerLength = 2.4  # Here, measurement unit is centimetre.
-
-# Provide separation between markers
-markerSeparation = 1.2   # Here, measurement unit is centimetre.
+import argparse
+import glob
+import os
+import AprilTagHelper
 
 
-# create arUco board
-board = aruco.GridBoard_create(5, 5, markerLength, markerSeparation, aruco_dict, firstMarker = 300)
+def process(args):
 
-'''uncomment following block to draw and show the board'''
-#img = board.draw((864,1080))
-#cv2.imshow("aruco", img)
+    files_list = glob.glob(os.path.join(args.image_dir, '*.jpg'))
+    print("Found {} files in {}".format(len(files_list),args.image_dir))
 
-arucoParams = aruco.DetectorParameters_create()
-img_list = []
-calib_fnms = calib_imgs_path.glob('*.jpg')
-print('Using ...', end='')
-for idx, fn in enumerate(calib_fnms):
+    dictionary = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_APRILTAG_36h11)
+    print("Dictionary Initialzed with family {}", cv2.aruco.DICT_APRILTAG_36h11)
 
-    if(idx>=10):
-        break
-    print(idx, '', end='')
-    img = cv2.imread( str(root.joinpath(fn) ))
-    img_list.append( img )
-    h, w, c = img.shape
-print('Calibration images')
+    detectorParameters = cv2.aruco.DetectorParameters_create()
+    detectorParameters.cornerRefinementMethod = cv2.aruco.CORNER_REFINE_APRILTAG
 
-counter, corners_list, id_list = [], [], []
-first = True
-for im in tqdm(img_list):
-    img_gray = cv2.cvtColor(im,cv2.COLOR_RGB2GRAY)
-    corners, ids, rejectedImgPoints = aruco.detectMarkers(img_gray, aruco_dict, parameters=arucoParams)
-    # if first == True: corners_list = corners
-    #     id_list = ids
-    #     first = False
-    # else:
-    corners_list = corners_list.append( corners)
-    id_list = corners_list.append(ids)
-    counter.append(len(ids))
-print('Found {} unique markers'.format(np.unique(ids)))
-counter = np.array(counter)
-print ("Calibrating camera .... Please wait...")
-#mat = np.zeros((3,3), float)
-ret, mtx, dist, rvecs, tvecs,_, _, reprojectionError = aruco.calibrateCameraArucoExtended(corners_list, id_list, counter, board, img_gray.shape, None, None )
-print(mtx)
-print(reprojectionError)
+    extracted_corners ,extracted_ids, extracted_counter = [], [], []
 
-# # data = {'camera_matrix': np.asarray(mtx).tolist(), 'dist_coeff': np.asarray(dist).tolist()}
-with open("outputs/corners-list_id-list_counter_orig_testing.pkl", "wb") as f:
-    pickle.dump((corners_list, id_list, counter,  img_gray.shape), f)
+    print("Detector Parameters Initialzed ")
+
+    for file_name in tqdm(files_list):
+        print("Working on ", file_name)
+        image = cv2.imread(file_name)
+
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        corners, ids, rejectedImgPoints = cv2.aruco.detectMarkers(gray, dictionary, parameters=detectorParameters)
+
+        corners, ids = zip(*[ [corners,_] for _,corners in sorted(zip(ids,corners)) ])
+
+
+        extracted_corners.append(corners)
+        extracted_ids.append(ids)
+        extracted_counter.append(len(ids))
+
+        if(args.visualize):
+            image =	cv2.aruco.drawDetectedMarkers(	image, corners, ids	)
+            cv2.namedWindow(file_name, cv2.WINDOW_NORMAL)
+            cv2.imshow(file_name, image)
+            cv2.waitKey(0)
+
+
+    if(args.visualize):
+        cv2.destroyAllWindows()
+
+    markerLength = 2.4 # Here, measurement unit is centimetre.
+    markerSeparation = 1.2   # Here, measurement unit is centimetre.
+
+    board = cv2.aruco.GridBoard_create(5, 5, markerLength, markerSeparation, dictionary, firstMarker = 350)
+
+    # img = board.draw((500 , 500))
+    # cv2.imshow('img', img)
+    # cv2.waitKey(0)
+
+    formatter = AprilTagHelper.AprilTagFormatter()
+    objPoints = formatter(extracted_corners, extracted_ids, board)
+
+
+
+    objPoints = objPoints
+
+
+
+
+    corner = []
+
+    for corners in extracted_corners:
+        corners = np.vstack(corners).reshape(-1,4, 2).astype(np.float32)
+        # corners[:,[0, 1,2, 3], :] = corners[:, [  1, 0, 3, 2], :]
+        corners = corners.reshape(-1, 2)
+        corner.append(corners)
+    corners = corner
+
+
+    if(args.visualize):
+        plotter = AprilTagHelper.AprilTagPlotter()
+        plotter(objPoints, extracted_ids)
+        plotter(corners ,extracted_ids)
+
+    with open("./outputs/classical_detections.pkl","wb") as f:
+        pickle.dump((corners, objPoints, gray.shape), f)
+
+    retval, cameraMatrix, distCoeffs, rvecs, tvecs, stdDeviationsIntrinsics, stdDeviationsExtrinsics, perViewErrors = 	cv2.calibrateCameraExtended(objPoints,corners, gray.shape, cameraMatrix=None , distCoeffs = None	)
+
+
+
+    print(cameraMatrix)
+    print(distCoeffs)
+    print(perViewErrors)
+
+    if(args.visualize):
+
+        cv2.namedWindow("image", cv2.WINDOW_NORMAL)
+        for ind, file_name in enumerate(tqdm(files_list)):
+            image = cv2.imread(file_name)
+
+            imagePoints, jacobian	=	cv2.projectPoints(	objPoints[ind], rvecs[ind], tvecs[ind], cameraMatrix, distCoeffs)
+            print(imagePoints)
+            for point in imagePoints:
+                print(point)
+                cv2.circle(image,tuple(point[0]), 3, (0,0,255), -1)
+
+
+            cv2.imshow("image", image)
+            cv2.waitKey(0)
+
+
+
+
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-I", "--image_dir", required=True,type = str,
+                        help="path to image directory containing images of AprilTag")
+    parser.add_argument("-T", "--tag_family",type = str,
+                        help="family of Apriltag (default:tag36h11) ", default = "tag36h11")
+
+    parser.add_argument( "--visualize",type = bool,
+                        help="Draw images for debugging", default = False)
+    args = parser.parse_args()
+    process(args)
+
+
+
+if __name__ == "__main__":
+    main()
