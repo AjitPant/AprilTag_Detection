@@ -71,8 +71,8 @@ class AprilTagGenerator(object):
         response_in_use = np.zeros((height, width, num_feats + 1), dtype=np.uint8)
         response_in_use[:, :, -1] = 255
 
-        d1 = 8
-        d2 = 8
+        d1 = 1
+        d2 = 1
         for i in range(num_feats):
             assert 0.0 <= corners[i, 0] < 1.0, 'corner x outside of image border!'
             assert 0.0 <= corners[i, 1] < 1.0, 'corner y outside of image border!'
