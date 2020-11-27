@@ -39,6 +39,8 @@ def main(hparams):
 
 
     trainer = Trainer(
+        num_nodes=1,
+        accelerator='ddp',
         gpus=hparams.n_gpu,
         checkpoint_callback=checkpoint_callback,
         accumulate_grad_batches=1,
