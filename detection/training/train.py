@@ -6,7 +6,7 @@ import torch
 
 from Unet import Unet
 from pytorch_lightning import Trainer
-from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping, LearningRateLogger
+from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 from pytorch_lightning.profiler import AdvancedProfiler
 
 
@@ -37,13 +37,11 @@ def main(hparams):
 
     )
 
-    lr_logger = LearningRateLogger()
 
     trainer = Trainer(
         gpus=hparams.n_gpu,
         checkpoint_callback=checkpoint_callback,
         early_stop_callback=stop_callback,
-        callbacks= [lr_logger],
         accumulate_grad_batches=1,
         # resume_from_checkpoint=hparams.checkpoint,
         benchmark=True,
