@@ -225,7 +225,7 @@ def app():
 
     n_processors = 16
 
-    mx_files = 100
+    mx_files = 4000
 
     file_list = sorted(list(os.listdir(directory))[0*mx_files:1*mx_files])
 
