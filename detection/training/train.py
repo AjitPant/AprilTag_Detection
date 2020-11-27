@@ -57,7 +57,7 @@ if __name__ == '__main__':
     parent_parser = ArgumentParser(add_help=False)
     parent_parser.add_argument('--dataset', required=True)
     parent_parser.add_argument('--n_gpu', default = 1, type = int)
-    parent_parser.add_argument('--log_dir', default='lightning_logs')
+    parent_parser.add_argument('--log_dir', default='/raid/apant_ma/AprilTag-Detection/AprilTag_Detection/detection/training/lightning_logs')
     parent_parser.add_argument('--checkpoint', default=None)
     parent_parser.add_argument('--batch_size', type=int, default=1)
     parser = Unet.add_model_specific_args(parent_parser)

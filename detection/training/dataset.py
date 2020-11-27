@@ -76,7 +76,6 @@ class DirDataset(Dataset):
             'mask1': 'mask',
         })
 
-        print(self.img_dir)
         try:
             self.ids = (sorted([os.path.splitext(s)[0]
                                 for s in os.listdir(self.img_dir) if os.path.splitext(s)[1] == '.jpg']))
