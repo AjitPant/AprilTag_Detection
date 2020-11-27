@@ -105,7 +105,7 @@ class ScaleAugmentation(object):
     def __init__(self,
                  scalex_lim=(1., 1.),
                  scaley_lim=(1., 1.),
-                 prob=0.8,
+                 prob=0.5,
                  debug=False):
         '''
         :param scalex_lim_deg: tuple(float, float) range of ratio of final tag's \
@@ -140,8 +140,8 @@ class ScaleAugmentation(object):
         scaley = np.random.uniform(self.scaley_lim[0], self.scaley_lim[1], 1)[0]
 
         if np.random.uniform(0, 1, 1)[0] >= self.prob:
-            scalex = np.random.uniform(self.scalex_lim[0], 0.8, 1)[0]
-            scaley = np.random.uniform(self.scaley_lim[0], 0.8, 1)[0]
+            scalex = np.random.uniform(self.scalex_lim[0], 0.1, 1)[0]
+            scaley = np.random.uniform(self.scaley_lim[0], 0.1, 1)[0]
 # GAussian
 
         dst_image = cv2.resize(src_image, interpolation = cv2.INTER_AREA,dsize = None, fx= scalex, fy = scaley)

@@ -1,5 +1,5 @@
-
 import pickle
+import cluster_tools
 from scipy.spatial import distance as dist
 import time
 import random
@@ -174,17 +174,17 @@ def app():
     parser.add_argument(
         '--root',
         type=str,
-        default='.',
+        default='/raid/apant_ma/AprilTag-Detection/AprilTag_Detection/DatasetGeneration/.',
         help='Directory to all standard April tag images.')
     parser.add_argument(
         '--img_folder',
         type=str,
-        default='./imgs',
+        default='/raid/apant_ma/AprilTag-Detection/AprilTag_Detection/DatasetGeneration/../../dataset/',
         help='Folder which contains background images')
     parser.add_argument(
         '--out_folder',
         type=str,
-        default='./out',
+        default='/raid/apant_ma/AprilTag-Detection/AprilTag_Detection/DatasetGeneration/./out',
         help='Output folder which contains dataset')
     parser.add_argument(
         '--family',
@@ -194,7 +194,7 @@ def app():
     parser.add_argument(
         '--size',
         type=int,
-        default=1024//2,
+        default=1024,
         help='Size of April tag images in pixels.')
     parser.add_argument(
        '--mx_tags',
@@ -211,11 +211,11 @@ def app():
     generator = AprilTagGenerator(root=args.root,
                                   family=args.family,
                                   size=args.size,
-                                  rx_lim_deg=(00, 50),
-                                  ry_lim_deg=(00, 50),
+                                  rx_lim_deg=(00, 70),
+                                  ry_lim_deg=(00, 70),
                                   rz_lim_deg=(-180, 180),
-                                  scalex_lim=(1.0/64*4*4, 1.0/32 *4*4),
-                                  scaley_lim=(1.0/64*4*4, 1.0/32 *4*4),
+                                  scalex_lim=(1.0/128, 1.0),
+                                  scaley_lim=(1.0/128, 1.0),
                                   )
 
     print(len(generator))
@@ -223,7 +223,7 @@ def app():
     directory = os.fsencode(args.img_folder)
     i = 0
 
-    n_processors = 4
+    n_processors = 16
 
     mx_files = 100
 
