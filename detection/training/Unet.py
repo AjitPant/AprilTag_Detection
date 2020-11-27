@@ -262,7 +262,7 @@ class Unet(pl.LightningModule):
         optimizer = torch.optim.Adam(self.parameters(), lr=4e-4*8)
         # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor = 0.3, patience = 3)
         # scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer, max_lr=1.0, steps_per_epoch=40, epochs=10)
-        return [optimizer] , [scheduler]
+        return [optimizer]
 
     def __dataloader(self):
         dataset = self.hparams.dataset
@@ -272,8 +272,8 @@ class Unet(pl.LightningModule):
         n_train = len(dataset) - n_val
 
         train_ds, val_ds = random_split(dataset, [n_train, n_val]) #, generator=torch.Generator().manual_seed(347))
-        train_loader = DataLoader(train_ds, batch_size=hparams.batch_size,num_workers=8, pin_memory=True, shuffle=True)
-        val_loader = DataLoader(val_ds, batch_size=hparams.batch_size,num_workers=8, pin_memory=True, shuffle=False)
+        train_loader = DataLoader(train_ds, batch_size=self.hparams.batch_size,num_workers=8, pin_memory=True, shuffle=True)
+        val_loader = DataLoader(val_ds, batch_size=self.hparams.batch_size,num_workers=8, pin_memory=True, shuffle=False)
 
         return {
             'train': train_loader,
