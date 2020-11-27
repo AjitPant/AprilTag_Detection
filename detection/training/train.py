@@ -14,8 +14,7 @@ from pytorch_lightning.profiler import AdvancedProfiler
 def main(hparams):
     print(hparams.dataset)
     model = Unet(hparams)
-    # if hparams.checkpoint != None:
-    #     model = Unet(hparams).load_from_checkpoint(hparams.checkpoint)
+
     model.train()
 
     os.makedirs(hparams.log_dir, exist_ok=True)
@@ -41,20 +40,13 @@ def main(hparams):
     lr_logger = LearningRateLogger()
 
     trainer = Trainer(
-        gpus=1,
-        # tpu_cores=1,
+        gpus=hparams.n_gpu,
         checkpoint_callback=checkpoint_callback,
         early_stop_callback=stop_callback,
         callbacks= [lr_logger],
-        accumulate_grad_batches=8,
-        resume_from_checkpoint=hparams.checkpoint,
-        # benchmark=True,
-        # overfit_batches=10,
-        # val_check_interval=0.250,
-        # auto_scale_batch_size='binsearch',
-        #gradient_clip_val=100,
-        #amp_level='O2',
-        #precision=16,
+        accumulate_grad_batches=1,
+        # resume_from_checkpoint=hparams.checkpoint,
+        benchmark=True,
     )
 
 
@@ -65,6 +57,7 @@ def main(hparams):
 if __name__ == '__main__':
     parent_parser = ArgumentParser(add_help=False)
     parent_parser.add_argument('--dataset', required=True)
+    parent_parser.add_argument('--n_gpu', default = 1, type = int)
     parent_parser.add_argument('--log_dir', default='lightning_logs')
     parent_parser.add_argument('--checkpoint', default=None)
     parent_parser.add_argument('--batch_size', type=int, default=1)

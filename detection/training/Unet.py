@@ -21,53 +21,7 @@ import torch
 from torchvision import transforms, datasets, models
 
 
-def dice_loss(input, target):
-    input = torch.sigmoid(input)
-    smooth = 1.0
-
-
-    iflat = input.view(-1)
-    tflat = target.view(-1)
-    intersection = (iflat * tflat).sum()
-
-    return ((2.0 * intersection + smooth) / (iflat.sum() + tflat.sum() + smooth))
-
-
-class FocalLoss(nn.Module):
-    def __init__(self, gamma):
-        super().__init__()
-        self.gamma = gamma
-
-    def forward(self, input, target):
-        if not (target.size() == input.size()):
-            raise ValueError("Target size ({}) must be the same as input size ({})"
-                             .format(target.size(), input.size()))
-
-        max_val = (-input).clamp(min=0)
-        loss = input - input * target + max_val + \
-            ((-max_val).exp() + (-input - max_val).exp()).log()
-
-        invprobs = F.logsigmoid(-input * (target * 2.0 - 1.0))
-        loss = (invprobs * self.gamma).exp() * loss
-
-        return loss.mean()
-
-
-class MixedLoss(nn.Module):
-    def __init__(self, alpha, gamma):
-        super().__init__()
-        self.alpha = alpha
-        self.focal = FocalLoss(gamma)
-
-    def forward(self, input, target):
-        # print(self.focal(input, target))
-        # print(torch.log(dice_loss(input, target)))
-        loss = self.alpha*self.focal(input, target) - torch.log(dice_loss(input, target))
-        return loss.mean()
-
-
 import torchvision
-resnet = torchvision.models.resnet.resnet50(pretrained=True)
 
 
 class ConvBlock(nn.Module):
@@ -149,306 +103,142 @@ def convrelu(in_channels, out_channels, kernel, padding):
         nn.BatchNorm2d(out_channels),
         nn.LeakyReLU(inplace=True),
     )
-class Unet(pl.LightningModule):
-    def __init__(self, hparams):
-        super(Unet, self).__init__()
-        self.hparams = hparams
-#
-        self.n_channels = 3#hparams.n_channels
-        self.n_classes = 2#hparams.n_classes
-        self.bilinear = True
-        self.cross_entropy_weights =torch.tensor([1,100, 100, 100, 100]).float().cuda()
-#
-        base_model = models.resnet18(pretrained=True)
-#
-        base_layers = list(base_model.children())
-#
-        self.layer0 = nn.Sequential(*base_layers[:3]) # size=(N, 64, x.H/2, x.W/2)
-        self.layer0_1x1 = convrelu(64, 64, 1, 0)
-        self.layer1 = nn.Sequential(*base_layers[3:5]) # size=(N, 64, x.H/4, x.W/4)
-        self.layer1_1x1 = convrelu(64, 64, 1, 0)
-        self.layer2 = base_layers[5]  # size=(N, 128, x.H/8, x.W/8)
-        self.layer2_1x1 = convrelu(128, 128, 1, 0)
-        self.layer3 = base_layers[6]  # size=(N, 256, x.H/16, x.W/16)
-        self.layer3_1x1 = convrelu(256, 256, 1, 0)
-        self.layer4 = base_layers[7]  # size=(N, 512, x.H/32, x.W/32)
-        self.layer4_1x1 = convrelu(512, 512,1, 0)
+from torch import nn
+import torch.nn.functional as F
 
-        # for param in self.layer0.parameters():
-        #     param.requires_grad = False
-        # for param in self.layer1.parameters():
-        #     param.requires_grad = False
-        # for param in self.layer2.parameters():
-        #     param.requires_grad = False
-        # for param in self.layer3.parameters():
-        #     param.requires_grad = False
-        # for param in self.layer4.parameters():
-        #     param.requires_grad = False
-        # for param in self.layer0_1x1.parameters():
-        #     param.requires_grad = False
-        # for param in self.layer1_1x1.parameters():
-        #     param.requires_grad = False
-        # for param in self.layer2_1x1.parameters():
-        #     param.requires_grad = False
-        # for param in self.layer3_1x1.parameters():
-        #     param.requires_grad = False
-        # for param in self.layer4_1x1.parameters():
-        #     param.requires_grad = False
-#
-        self.upsample = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
-#
-        self.conv_up3 = convrelu(256 + 512, 512, 3, 1)
-        self.conv_up2 = convrelu(128 + 512, 256, 3, 1)
-        self.conv_up1 = convrelu(64 + 256, 256, 3, 1)
-        self.conv_up0 = convrelu(64 + 256, 128, 3, 1)
-#
-        self.conv_original_size0 = convrelu(3, 64, 3, 1)
-        self.conv_original_size1 = convrelu(64, 64, 3, 1)
-        self.conv_original_size2 = convrelu(64 + 128, 64, 3, 1)
-#
-        self.conv_last = nn.Conv2d(64, self.n_classes, 1)
-        self.hparams = hparams
-        self.loss_func = MixedLoss(10.0, 2.0);
-    def forward(self, input):
-        x_original = self.conv_original_size0(input)
-        x_original = self.conv_original_size1(x_original)
-#
-        layer0 = self.layer0(input)
-        layer1 = self.layer1(layer0)
-        layer2 = self.layer2(layer1)
-        layer3 = self.layer3(layer2)
-        layer4 = self.layer4(layer3)
-#
-        layer4 = self.layer4_1x1(layer4)
-        x = self.upsample(layer4)
-#
-        layer3 = self.layer3_1x1(layer3)
-        x = torch.cat([x, layer3], dim=1)
-        x = self.conv_up3(x)
-#
-        x = self.upsample(x)
-        layer2 = self.layer2_1x1(layer2)
-        x = torch.cat([x, layer2], dim=1)
-        x = self.conv_up2(x)
-#
-        x = self.upsample(x)
-        layer1 = self.layer1_1x1(layer1)
-        x = torch.cat([x, layer1], dim=1)
-        x = self.conv_up1(x)
-#
-        x = self.upsample(x)
-        layer0 = self.layer0_1x1(layer0)
-        x = torch.cat([x, layer0], dim=1)
-        x = self.conv_up0(x)
-#
-        x = self.upsample(x)
-        x = torch.cat([x, x_original], dim=1)
-        x = self.conv_original_size2(x)
-#
-        out = self.conv_last(x)
-#
+
+
+
+class UNetConvBlock(nn.Module):
+    def __init__(self, in_size, out_size, padding, batch_norm):
+        super(UNetConvBlock, self).__init__()
+        block = []
+
+        block.append(nn.Conv2d(in_size, out_size, kernel_size=3, padding=int(padding)))
+        block.append(nn.ReLU())
+        if batch_norm:
+            block.append(nn.BatchNorm2d(out_size))
+
+        block.append(nn.Conv2d(out_size, out_size, kernel_size=3, padding=int(padding)))
+        block.append(nn.ReLU())
+        if batch_norm:
+            block.append(nn.BatchNorm2d(out_size))
+
+        self.block = nn.Sequential(*block)
+
+    def forward(self, x):
+        out = self.block(x)
         return out
-# from torch import nn
-# import torch.nn.functional as F
 
 
+class UNetUpBlock(nn.Module):
+    def __init__(self, in_size, out_size, up_mode, padding, batch_norm):
+        super(UNetUpBlock, self).__init__()
+        if up_mode == 'upconv':
+            self.up = nn.ConvTranspose2d(in_size, out_size, kernel_size=2, stride=2)
+        elif up_mode == 'upsample':
+            self.up = nn.Sequential(
+                nn.Upsample(mode='bilinear', scale_factor=2),
+                nn.Conv2d(in_size, out_size, kernel_size=1),
+            )
 
+        self.conv_block = UNetConvBlock(in_size, out_size, padding, batch_norm)
 
-# class UNetConvBlock(nn.Module):
-#     def __init__(self, in_size, out_size, padding, batch_norm):
-#         super(UNetConvBlock, self).__init__()
-#         block = []
+    def center_crop(self, layer, target_size):
+        _, _, layer_height, layer_width = layer.size()
+        diff_y = (layer_height - target_size[0]) // 2
+        diff_x = (layer_width - target_size[1]) // 2
+        return layer[
+            :, :, diff_y : (diff_y + target_size[0]), diff_x : (diff_x + target_size[1])
+        ]
 
-#         block.append(nn.Conv2d(in_size, out_size, kernel_size=3, padding=int(padding)))
-#         block.append(nn.ReLU())
-#         if batch_norm:
-#             block.append(nn.BatchNorm2d(out_size))
+    def forward(self, x, bridge):
+        up = self.up(x)
+        crop1 = self.center_crop(bridge, up.shape[2:])
+        out = torch.cat([up, crop1], 1)
+        out = self.conv_block(out)
 
-#         block.append(nn.Conv2d(out_size, out_size, kernel_size=3, padding=int(padding)))
-#         block.append(nn.ReLU())
-#         if batch_norm:
-#             block.append(nn.BatchNorm2d(out_size))
+        return out
 
-#         self.block = nn.Sequential(*block)
+class Unet(pl.LightningModule):
+    def __init__(
+        self,hparams
+    ):
+        """
+        Implementation of
+        U-Net: Convolutional Networks for Biomedical Image Segmentation
+        (Ronneberger et al., 2015)
+        https://arxiv.org/abs/1505.04597
+        Using the default arguments will yield the exact version used
+        in the original paper
+        Args:
+            in_channels (int): number of input channels
+            n_classes (int): number of output channels
+            depth (int): depth of the network
+            wf (int): number of filters in the first layer is 2**wf
+            padding (bool): if True, apply padding such that the input shape
+                            is the same as the output.
+                            This may introduce artifacts
+            batch_norm (bool): Use BatchNorm after layers with an
+                               activation function
+            up_mode (str): one of 'upconv' or 'upsample'.
+                           'upconv' will use transposed convolutions for
+                           learned upsampling.
+                           'upsample' will use bilinear upsampling.
+        """
+        super(Unet, self).__init__()
 
-#     def forward(self, x):
-#         out = self.block(x)
-#         return out
+        self.in_channels=3
+        self.n_classes=2
+        self.depth=6
+        self.wf=6
+        self.padding=True
+        self.batch_norm=True
+        self.up_mode='upconv'
+        self.hparams = hparams
 
+        assert self.up_mode in ('upconv', 'upsample')
+        self.padding = self.padding
+        self.depth = self.depth
+        prev_channels = self.in_channels
+        self.down_path = nn.ModuleList()
+        for i in range(self.depth):
+            self.down_path.append(
+                UNetConvBlock(prev_channels, 2 ** (self.wf + i), self.padding, self.batch_norm)
+            )
+            prev_channels = 2 ** (self.wf + i)
 
-# class UNetUpBlock(nn.Module):
-#     def __init__(self, in_size, out_size, up_mode, padding, batch_norm):
-#         super(UNetUpBlock, self).__init__()
-#         if up_mode == 'upconv':
-#             self.up = nn.ConvTranspose2d(in_size, out_size, kernel_size=2, stride=2)
-#         elif up_mode == 'upsample':
-#             self.up = nn.Sequential(
-#                 nn.Upsample(mode='bilinear', scale_factor=2),
-#                 nn.Conv2d(in_size, out_size, kernel_size=1),
-#             )
+        self.up_path = nn.ModuleList()
+        for i in reversed(range(self.depth - 1)):
+            self.up_path.append(
+                UNetUpBlock(prev_channels, 2 ** (self.wf + i), self.up_mode, self.padding, self.batch_norm)
+            )
+            prev_channels = 2 ** (self.wf + i)
 
-#         self.conv_block = UNetConvBlock(in_size, out_size, padding, batch_norm)
+        self.last = nn.Conv2d(prev_channels, self.n_classes, kernel_size=1)
 
-#     def center_crop(self, layer, target_size):
-#         _, _, layer_height, layer_width = layer.size()
-#         diff_y = (layer_height - target_size[0]) // 2
-#         diff_x = (layer_width - target_size[1]) // 2
-#         return layer[
-#             :, :, diff_y : (diff_y + target_size[0]), diff_x : (diff_x + target_size[1])
-#         ]
+    def forward(self, x):
+        blocks = []
+        for i, down in enumerate(self.down_path):
+            x = down(x)
+            if i != len(self.down_path) - 1:
+                blocks.append(x)
+                x = F.max_pool2d(x, 2)
 
-#     def forward(self, x, bridge):
-#         up = self.up(x)
-#         crop1 = self.center_crop(bridge, up.shape[2:])
-#         out = torch.cat([up, crop1], 1)
-#         out = self.conv_block(out)
+        for i, up in enumerate(self.up_path):
+            x = up(x, blocks[-i - 1])
 
-#         return out
+        return self.last(x)
 
-# class Unet(pl.LightningModule):
-#     def __init__(
-#         self,hparams
-#     ):
-#         """
-#         Implementation of
-#         U-Net: Convolutional Networks for Biomedical Image Segmentation
-#         (Ronneberger et al., 2015)
-#         https://arxiv.org/abs/1505.04597
-#         Using the default arguments will yield the exact version used
-#         in the original paper
-#         Args:
-#             in_channels (int): number of input channels
-#             n_classes (int): number of output channels
-#             depth (int): depth of the network
-#             wf (int): number of filters in the first layer is 2**wf
-#             padding (bool): if True, apply padding such that the input shape
-#                             is the same as the output.
-#                             This may introduce artifacts
-#             batch_norm (bool): Use BatchNorm after layers with an
-#                                activation function
-#             up_mode (str): one of 'upconv' or 'upsample'.
-#                            'upconv' will use transposed convolutions for
-#                            learned upsampling.
-#                            'upsample' will use bilinear upsampling.
-#         """
-#         super(Unet, self).__init__()
-
-#         self.in_channels=3
-#         self.n_classes=2
-#         self.depth=6
-#         self.wf=4
-#         # self.depth=4
-#         # self.wf=3
-#         self.padding=True
-#         self.batch_norm=True
-#         self.up_mode='upconv'
-#         self.hparams = hparams
-
-#         assert self.up_mode in ('upconv', 'upsample')
-#         self.padding = self.padding
-#         self.depth = self.depth
-#         prev_channels = self.in_channels
-#         self.down_path = nn.ModuleList()
-#         for i in range(self.depth):
-#             self.down_path.append(
-#                 UNetConvBlock(prev_channels, 2 ** (self.wf + i), self.padding, self.batch_norm)
-#             )
-#             prev_channels = 2 ** (self.wf + i)
-
-#         self.up_path = nn.ModuleList()
-#         for i in reversed(range(self.depth - 1)):
-#             self.up_path.append(
-#                 UNetUpBlock(prev_channels, 2 ** (self.wf + i), self.up_mode, self.padding, self.batch_norm)
-#             )
-#             prev_channels = 2 ** (self.wf + i)
-
-#         self.last = nn.Conv2d(prev_channels, self.n_classes, kernel_size=1)
-
-#     def forward(self, x):
-#         blocks = []
-#         for i, down in enumerate(self.down_path):
-#             x = down(x)
-#             if i != len(self.down_path) - 1:
-#                 blocks.append(x)
-#                 x = F.max_pool2d(x, 2)
-
-#         for i, up in enumerate(self.up_path):
-#             x = up(x, blocks[-i - 1])
-
-#         return self.last(x)
-
-# class Unet(pl.LightningModule):
-#     DEPTH = 6
-
-#     def __init__(self, hparams):
-#         super().__init__()
-#         self.hparams = hparams
-#         self.loss_func = MixedLoss(10.0, 2.0);
-#         self.cross_entropy_weights =torch.tensor([1,100, 100, 100, 100],dtype = torch.float32, device = torch.device('cuda:0'))
-#         resnet = torchvision.models.resnet.resnet50(pretrained=True)
-#         down_blocks = []
-#         up_blocks = []
-#         self.input_block = nn.Sequential(*list(resnet.children()))[:3]
-#         self.input_pool = list(resnet.children())[3]
-#         for bottleneck in list(resnet.children()):
-#             if isinstance(bottleneck, nn.Sequential):
-#                 down_blocks.append(bottleneck)
-#         self.down_blocks = nn.ModuleList(down_blocks)
-#         #self.bridge = Bridge(2048, 2048)
-#         up_blocks.append(UpBlockForUNetWithResNet50(2048, 1024))
-#         up_blocks.append(UpBlockForUNetWithResNet50(1024, 512))
-#         up_blocks.append(UpBlockForUNetWithResNet50(512, 256))
-#         up_blocks.append(UpBlockForUNetWithResNet50(in_channels=128  + 64, out_channels=128,
-#                                                     up_conv_in_channels=256, up_conv_out_channels=128))
-#         up_blocks.append(UpBlockForUNetWithResNet50(in_channels=64 + 3  , out_channels=64 ,
-#                                                     up_conv_in_channels=128, up_conv_out_channels=64))
-
-#         self.up_blocks = nn.ModuleList(up_blocks)
-#         self.out = nn.Conv2d(64, 2, kernel_size=1, stride=1)
-#     def forward(self, x, with_output_feature_map=False):
-#         pre_pools = dict()
-#         pre_pools[f"layer_0"] = x
-#         x = self.input_block(x)
-#         pre_pools[f"layer_1"] = x
-#         x = self.input_pool(x)
-
-#         for i, block in enumerate(self.down_blocks, 2):
-#             x = block(x)
-#             if i == (Unet.DEPTH - 1):
-#                 continue
-#             pre_pools[f"layer_{i}"] = x
-
-#         #x = self.bridge(x)
-
-#         for i, block in enumerate(self.up_blocks, 1):
-#             key = f"layer_{Unet.DEPTH - 1 - i}"
-#             x = block(x, pre_pools[key])
-#         x = self.out(x)
-
-#         return x
 
     def training_step(self, batch, batch_nb):
         x, y = batch
 
 
         y_hat = self.forward(x)
-        # loss = F.cross_entropy(y_hat[:,:5], y[:,1].squeeze(1).long(), weight = self.cross_entropy_weights)
 
-        loss = torch.zeros(1)
 
-        # for batch in range(y_hat.shape[0]):
-        #     for i in range(2):
-
-        #         loss += self.loss_func(y_hat[batch,i],   y[batch,i])
-        # loss += self.loss_func(y_hat , y)
-
-        # loss += 100*F.binary_cross_entropy_with_logits(y_hat[:,1], y[:,1])
-        loss += F.binary_cross_entropy_with_logits(y_hat, y)
-        # corner_loss = loss.clone().detach()
-        # loss += F.binary_cross_entropy_with_logits(y_hat[:, :5], y[:,:5])
-        # loss += F.binary_cross_entropy_with_logits(y_hat[:, 5], y[:,5])
-        # for batch in range(y_hat.shape[0]):
-            # loss += self.loss_func(y_hat[batch,5], y[batch,5])
+        loss = F.binary_cross_entropy_with_logits(y_hat, y)
 
         tensorboard_logs = {'train_loss': loss}
         return {'loss': loss, 'log': tensorboard_logs}
@@ -458,20 +248,7 @@ class Unet(pl.LightningModule):
 
         y_hat = self.forward(x)
 
-        # loss = F.cross_entropy(y_hat[:,:5], y[:,1].squeeze(1).long(), weight = self.cross_entropy_weights)
-        loss = torch.zeros(1)
-        # for batch in range(y_hat.shape[0]):
-        #     for i in range(2):
-
-        #         loss += self.loss_func(y_hat[batch,i] , y[batch,i])
-        # loss += self.loss_func(y_hat , y)
-        # loss += 100*F.binary_cross_entropy_with_logits(y_hat, y)
-        loss += F.binary_cross_entropy_with_logits(y_hat, y)
-        # corner_loss = loss.clone().detach()
-        # for batch in range(y_hat.shape[0]):
-        #     loss += self.loss_func(y_hat[batch,5], y[batch,5])
-        # loss += F.binary_cross_entropy_with_logits(y_hat[:, :5], y[:,:5])
-        # loss += F.binary_cross_entropy_with_logits(y_hat[:, 5], y[:,5])
+        loss = F.binary_cross_entropy_with_logits(y_hat, y)
 
         return {'val_loss': loss}
 
@@ -483,20 +260,20 @@ class Unet(pl.LightningModule):
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=4e-4*8)
-        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor = 0.3, patience = 3)
+        # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor = 0.3, patience = 3)
         # scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer, max_lr=1.0, steps_per_epoch=40, epochs=10)
         return [optimizer] , [scheduler]
 
     def __dataloader(self):
         dataset = self.hparams.dataset
-        dataset = DirDataset(f'./dataset/{dataset}/img', f'./dataset/{dataset}/mask')
+        dataset = DirDataset(f'{dataset}/img', f'{dataset}/mask')
 
         n_val = int(len(dataset) * 0.1)
         n_train = len(dataset) - n_val
 
         train_ds, val_ds = random_split(dataset, [n_train, n_val]) #, generator=torch.Generator().manual_seed(347))
-        train_loader = DataLoader(train_ds, batch_size=1,num_workers=8, pin_memory=True, shuffle=True)
-        val_loader = DataLoader(val_ds, batch_size=1,num_workers=8, pin_memory=True, shuffle=False)
+        train_loader = DataLoader(train_ds, batch_size=hparams.batch_size,num_workers=8, pin_memory=True, shuffle=True)
+        val_loader = DataLoader(val_ds, batch_size=hparams.batch_size,num_workers=8, pin_memory=True, shuffle=False)
 
         return {
             'train': train_loader,
