@@ -44,6 +44,7 @@ def main(hparams):
         gpus=hparams.n_gpu,
         checkpoint_callback=checkpoint_callback,
         accumulate_grad_batches=1,
+        auto_scale_batch_size='binsearch',
         # resume_from_checkpoint=hparams.checkpoint,
         benchmark=True,
     )
