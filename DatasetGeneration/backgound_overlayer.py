@@ -18,7 +18,7 @@ class backgroundOverlayer(object):
 
 
         corners_collection = []
-        tags_to_overlay = 20
+        tags_to_overlay = 50
         out_response = np.zeros(background_img.shape[:2], dtype = np.uint8)
         real_out_response = np.full((background_img.shape[0],background_img.shape[1], 5),0, dtype = np.uint8)
         real_out_response[:,:,-1] = 255
