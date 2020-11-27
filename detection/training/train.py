@@ -41,7 +41,6 @@ def main(hparams):
     trainer = Trainer(
         gpus=hparams.n_gpu,
         checkpoint_callback=checkpoint_callback,
-        early_stop_callback=stop_callback,
         accumulate_grad_batches=1,
         # resume_from_checkpoint=hparams.checkpoint,
         benchmark=True,
