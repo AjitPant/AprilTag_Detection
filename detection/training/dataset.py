@@ -82,9 +82,10 @@ class DirDataset(Dataset):
 
         except FileNotFoundError:
             self.ids = []
+        print("extracted_ ids cnt : "+str(len(self.ids))) 
 
     def __len__(self):
-        return min(4000, len(self.ids))
+        return len(self.ids)
 
     def preprocess(self, img, mask=False):
 

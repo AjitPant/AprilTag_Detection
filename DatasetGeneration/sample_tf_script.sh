@@ -1,15 +1,15 @@
 #!/bin/sh 
-#SBATCH --job-name=tf_job_test
+#SBATCH --job-name=apriltag_generator
 # Job name 
 #SBATCH --ntasks=1
 # Run on a single CPU 
-#SBATCH --time=00:50:00
+#SBATCH --time=02:00:00
 # Time limit hrs:min:sec
 #SBATCH --output=tf_test_%j.out
 # Standard output and error log
 #SBATCH --cpus-per-task=16
-#SBATCH --gres=gpu:1
-#SBATCH --mem=32GB
+#SBATCH --gres=gpu:0
+#SBATCH --mem=64GB
 echo $CUDA_VISIBLE_DEVICES
 echo "SLURM_JOBID="$SLURM_JOBID
 echo "SLURM_JOB_NODELIST"=$SLURM_JOB_NODELIST
@@ -31,10 +31,12 @@ echo $CUDA_VISIBLE_DEVICES
 
 NV_GPU=$CUDA_VISIBLE_DEVICES 
 
-nvidia-docker build -t pytorchlightning-mod/pytorch-lightning:base-conda-py3.8-torch1.7 .
-docker images
+docker container ls
+nvidia-smi
+#nvidia-docker build -t pytorchlightning-mod/pytorch-lightning:base-conda-py3.8-torch1.7 .
+#docker images
 # nvidia-docker run  --rm  -v /raid//apant_ma/:/raid/apant_ma pytorchlightning-mod/pytorch-lightning:base-conda-py3.8-torch1.7 python -c "import shutil;shutil.rmtree('/raid/apant_ma/AprilTag-Detection/AprilTag_Detection/DatasetGeneration/out')"
 
-nvidia-docker run  --rm  -v /raid//apant_ma/:/raid/apant_ma pytorchlightning-mod/pytorch-lightning:base-conda-py3.8-torch1.7 python /raid/apant_ma/AprilTag-Detection/AprilTag_Detection/DatasetGeneration/merge_with_image.py
+#nvidia-docker run  --rm  -v /raid//apant_ma/:/raid/apant_ma pytorchlightning-mod/pytorch-lightning:base-conda-py3.8-torch1.7 python /raid/apant_ma/AprilTag-Detection/AprilTag_Detection/DatasetGeneration/merge_with_image.py
 
 
