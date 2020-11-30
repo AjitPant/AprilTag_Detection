@@ -52,7 +52,7 @@ class AprilTagGenerator(object):
             mask=mask,
             response=self.get_response(dst_corners_uv[0], dst_width, dst_height)[0],
             response_in_use=self.get_response(dst_corners_uv[0], dst_width, dst_height)[1],
-            corners_uv=dst_corners_uv[0]*self.size)
+            corners_uv=dst_corners_uv[0]*np.array([dst_width, dst_height]))
 
 
     @staticmethod

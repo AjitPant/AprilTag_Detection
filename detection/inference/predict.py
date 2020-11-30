@@ -31,7 +31,7 @@ import math
 from functools import reduce
 
 
-cv_time_wait = 1
+cv_time_wait = 0
 
 from scipy.spatial import distance as dist
 inf_ind = 0
@@ -392,7 +392,7 @@ def reduce_to_tags(net, net_id, img, response_1, response_2, filename, hparams):
 
 
 
-def predict(net, img, device='cuda', threshold=0.25, kernel =768, stride =512):
+def predict(net, img, device='cuda', threshold=0.125, kernel =768, stride =512):
     with torch.no_grad():
         ds = DirDataset('', '')
         _img = (ds.preprocess(img))

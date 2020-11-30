@@ -131,7 +131,7 @@ class backgroundOverlayer(object):
                 really_real_out_response[y_offset:y_offset + height , x_offset:x_offset + width, :-1]  = np.maximum(response_in_use[:,:,:-1], really_real_out_response_view[:,:,:-1])
                 really_real_out_response[y_offset:y_offset + height , x_offset:x_offset + width, -1]  = np.minimum(response_in_use[:,:,-1], really_real_out_response_view[:,:,-1])
 
-                corners_collection.append([corners_coords ])
+                corners_collection.append([np.array([x_offset, y_offset])+corners_coords ])
 
 
         if np.random.uniform(0, 1, 1)[0] > 1.8:

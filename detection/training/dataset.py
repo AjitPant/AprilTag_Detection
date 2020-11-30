@@ -1,5 +1,6 @@
 import os, glob, cv2
 import random
+import pickle
 from tqdm import tqdm
 from PIL import Image
 import numpy as np, torch
@@ -18,27 +19,22 @@ class DirDataset(Dataset):
 
 
         self.aug = A.Compose([
-            A.OneOf([
-                        A.ElasticTransform(),
-                        A.GridDistortion(),
-                        A.OpticalDistortion(),
-                    ], p=0.2),
 
             A.OneOf([
-                A.RandomSizedCrop(min_max_height=(original_height//2, original_height),
+                A.RandomSizedCrop(min_max_height=(original_height//4, original_height),
                                   height=original_height, width=original_width, p=0.5),
                 A.PadIfNeeded(min_height=original_height,
                               min_width=original_width, p=0.5)
             ], p=0.5),
             A.OneOf([
-                A.Blur((5,17), p = 0.5),
-                A.MotionBlur((9,27),p =  0.5),
+                A.Blur((5,11), p = 0.5),
+                A.MotionBlur((5,11),p =  0.5),
             ], p=0.5),
 
             A.OneOf([
                 A.ToGray(),
-                A.CoarseDropout(max_height=40, min_height=2,
-                                max_width=40, min_width=2, min_holes=1, max_holes=20,fill_value=(255,0,255)),
+                # A.CoarseDropout(max_height=40, min_height=2,
+                #                 max_width=40, min_width=2, min_holes=1, max_holes=20,fill_value=(255,0,255)),
                 A.ChannelDropout(),
             ], p=0.5),
 
@@ -46,19 +42,19 @@ class DirDataset(Dataset):
             A.OneOf([
                 A.VerticalFlip(p=0.5),
                 A.HorizontalFlip(p=0.5),
-            ], p=0.5),
+            ], p=0.1),
 
             A.OneOf([
                 A.RandomRotate90(p=0.5),
                 A.Rotate(limit=180, p=0.5),
             ], p=0.5),
-            A.CLAHE(p=0.5),
+            A.CLAHE(p=0.3),
             A.GaussNoise(),
             A.OneOf([
                 # A.RandomSnow(p=1.0),
                 A.RandomRain(),
                 A.RandomFog( fog_coef_lower = 0.1, fog_coef_upper = 0.3),
-            ], p=0.5),
+            ], p=0.1),
             A.OneOf([
                 A.RandomShadow(p=0.8, num_shadows_upper=5),
                 A.RandomSunFlare(src_radius=40),
@@ -74,7 +70,8 @@ class DirDataset(Dataset):
 
             'mask0': 'mask',
             'mask1': 'mask',
-        })
+            'keypoints': 'keypoints',
+        }, keypoint_params=A.KeypointParams(format='xy'))
 
         try:
             self.ids = (sorted([os.path.splitext(s)[0]
@@ -82,7 +79,7 @@ class DirDataset(Dataset):
 
         except FileNotFoundError:
             self.ids = []
-        print("extracted_ ids cnt : "+str(len(self.ids))) 
+        print("extracted_ ids cnt : "+str(len(self.ids)))
 
     def __len__(self):
         return len(self.ids)
@@ -105,22 +102,45 @@ class DirDataset(Dataset):
         img_files = [os.path.join(self.img_dir, idx + '.jpg')]
         mask_files = [os.path.join(self.mask_dir, idx + '_0.png'),
                       os.path.join(self.mask_dir, idx + '_5.png'), ]
+        keypoints_file = os.path.join(self.img_dir, idx + '.pkl')
+        print(keypoints_file)
 
-        assert len(img_files) == 1, f"{idx}: {img_files}"
-        assert len(mask_files) == 2, f"{idx}: {mask_files}"
+        assert all([os.path.exists(path) for path in img_files]), 'image files missing'
+        assert all([os.path.exists(path) for path in mask_files]), 'mask files missing'
+        assert os.path.exists(keypoints_file), 'keypoints files missing'
 
         img = cv2.imread(img_files[0])
         mask = [cv2.imread(mask_file, cv2.IMREAD_GRAYSCALE)
                 for mask_file in mask_files]
-
-
-        augmented = self.aug(image=img, mask0=mask[0], mask1=mask[1])
+        with open(keypoints_file, "rb") as f:
+            keypoints = np.array(pickle.load(f)).reshape((-1,2)).tolist()
+        print(img.shape)
+        print(keypoints)
+        augmented = self.aug(image=img, mask0=mask[0], mask1=mask[1], keypoints = keypoints)
         img = augmented['image']
-        mask[0] = augmented['mask0']
+
         mask[1] = augmented['mask1']
+        mask[0] = augmented['mask0']
+
+        keypoints = augmented['keypoints']
+
+        mask[0].fill(0)
+
+        d = 1
+
+        for point in keypoints:
+            mask[0][max(0, int(point[1]) -d): min(img.shape[0], int(point[1])+d+1), max(0, int(point[0]) -d): min(img.shape[1], int(point[0])+d+1)] = 255
+
+
+        cv2.imshow("img", img);
+        cv2.imshow("mask corners", mask[0]);
+        cv2.imshow("mask segmentation", mask[1]);
+        cv2.waitKey(0)
+
+
 
         mask = torch.FloatTensor(mask)
-        mask = ((mask / 255) > 0.25).float()
+        mask = ((mask / 255)).float()
 
         img = Image.fromarray(img)
 

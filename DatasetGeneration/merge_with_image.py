@@ -1,5 +1,4 @@
 import pickle
-import cluster_tools
 from scipy.spatial import distance as dist
 import time
 import random
@@ -149,9 +148,6 @@ def augment_and_save(file, overlayer, args):
             img = cv2.resize(img, (512*2, 512*2))
             img_out, response_1, response_2, response_3 ,response_id, corners_collection = overlayer(img)
 
-            # img_out = cv2.resize(img_out ,(512//2, 512//1), interpolation=cv2.INTER_AREA)
-            # response_1 = cv2.resize(response_1, (512//2, 512//1), interpolation=cv2.INTER_AREA)
-            # response_2 = cv2.resize(response_2, (512//2, 512//1), interpolation=cv2.INTER_AREA)
             cv2.imwrite(os.path.join(args.out_folder, 'img',
                                      filename[:-4] + "_" + str(j) + '.jpg'), img_out)
             cv2.imwrite(os.path.join(args.out_folder, 'mask',
@@ -223,9 +219,9 @@ def app():
     directory = os.fsencode(args.img_folder)
     i = 0
 
-    n_processors = 16
+    n_processors = 4
 
-    mx_files = 4000
+    mx_files = 40
 
     file_list = sorted(list(os.listdir(directory))[4*mx_files:8*mx_files])
 
