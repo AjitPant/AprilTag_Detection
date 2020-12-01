@@ -216,8 +216,8 @@ def app():
                                   rx_lim_deg=(-70, 70),
                                   ry_lim_deg=(-70, 70),
                                   rz_lim_deg=(-180, 180),
-                                  scalex_lim=(1.0/128, 1.0/8),
-                                  scaley_lim=(1.0/128, 1.0/8),
+                                  scalex_lim=(1.0/128, 1.0),
+                                  scaley_lim=(1.0/128, 1.0),
                                   )
 
     print(len(generator))
@@ -227,9 +227,9 @@ def app():
 
     n_processors = 16
 
-    mx_files = 40
+    mx_files = 4000
 
-    file_list = sorted(list(os.listdir(directory))[2*mx_files:4*mx_files])
+    file_list = sorted(list(os.listdir(directory))[0*mx_files:2*mx_files])
 
     '''
     pass the task function, followed by the parameters to processors

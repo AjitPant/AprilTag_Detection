@@ -39,7 +39,7 @@ def main(hparams):
 
     trainer = Trainer(
         num_nodes=1,
-        max_epochs = 5,
+        max_epochs = 30,
         accelerator='ddp',
         gpus=hparams.n_gpu,
         checkpoint_callback=checkpoint_callback,
