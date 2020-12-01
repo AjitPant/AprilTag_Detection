@@ -190,8 +190,8 @@ class Unet(pl.LightningModule):
 
         self.in_channels=3
         self.n_classes=2
-        self.depth=6
-        self.wf=5
+        self.depth=5
+        self.wf=4
         self.padding=True
         self.batch_norm=True
         self.up_mode='upconv'
@@ -270,6 +270,7 @@ class Unet(pl.LightningModule):
 
         n_val = int(len(dataset) * 0.1)
         n_train = len(dataset) - n_val
+        print(len(dataset))
 
         train_ds, val_ds = random_split(dataset, [n_train, n_val]) #, generator=torch.Generator().manual_seed(347))
         train_loader = DataLoader(train_ds, batch_size=self.hparams.batch_size,num_workers=8, pin_memory=True, shuffle=True)
