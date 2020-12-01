@@ -207,11 +207,11 @@ def app():
     generator = AprilTagGenerator(root=args.root,
                                   family=args.family,
                                   size=args.size,
-                                  rx_lim_deg=(00, 70),
-                                  ry_lim_deg=(00, 70),
+                                  rx_lim_deg=(-70, 70),
+                                  ry_lim_deg=(-70, 70),
                                   rz_lim_deg=(-180, 180),
-                                  scalex_lim=(1.0/128, 1.0/64),
-                                  scaley_lim=(1.0/128, 1.0/64),
+                                  scalex_lim=(1.0/128, 1.0/8),
+                                  scaley_lim=(1.0/128, 1.0/8),
                                   )
 
     print(len(generator))
@@ -219,11 +219,11 @@ def app():
     directory = os.fsencode(args.img_folder)
     i = 0
 
-    n_processors = 4
+    n_processors = 16
 
-    mx_files = 40
+    mx_files = 4000
 
-    file_list = sorted(list(os.listdir(directory))[4*mx_files:8*mx_files])
+    file_list = sorted(list(os.listdir(directory))[2*mx_files:4*mx_files])
 
     '''
     pass the task function, followed by the parameters to processors

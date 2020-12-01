@@ -140,8 +140,8 @@ class ScaleAugmentation(object):
         scaley = np.random.uniform(self.scaley_lim[0], self.scaley_lim[1], 1)[0]
 
         if np.random.uniform(0, 1, 1)[0] >= self.prob:
-            scalex = np.random.uniform(self.scalex_lim[0], 0.1, 1)[0]
-            scaley = np.random.uniform(self.scaley_lim[0], 0.1, 1)[0]
+            scalex = np.random.uniform(self.scalex_lim[0], 0.5, 1)[0]
+            scaley = np.random.uniform(self.scaley_lim[0], 0.5, 1)[0]
 # GAussian
 
         dst_image = cv2.resize(src_image, interpolation = cv2.INTER_AREA,dsize = None, fx= scalex, fy = scaley)

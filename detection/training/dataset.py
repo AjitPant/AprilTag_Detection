@@ -103,7 +103,6 @@ class DirDataset(Dataset):
         mask_files = [os.path.join(self.mask_dir, idx + '_0.png'),
                       os.path.join(self.mask_dir, idx + '_5.png'), ]
         keypoints_file = os.path.join(self.img_dir, idx + '.pkl')
-        print(keypoints_file)
 
         assert all([os.path.exists(path) for path in img_files]), 'image files missing'
         assert all([os.path.exists(path) for path in mask_files]), 'mask files missing'
@@ -114,8 +113,6 @@ class DirDataset(Dataset):
                 for mask_file in mask_files]
         with open(keypoints_file, "rb") as f:
             keypoints = np.array(pickle.load(f)).reshape((-1,2)).tolist()
-        print(img.shape)
-        print(keypoints)
         augmented = self.aug(image=img, mask0=mask[0], mask1=mask[1], keypoints = keypoints)
         img = augmented['image']
 
@@ -132,10 +129,6 @@ class DirDataset(Dataset):
             mask[0][max(0, int(point[1]) -d): min(img.shape[0], int(point[1])+d+1), max(0, int(point[0]) -d): min(img.shape[1], int(point[0])+d+1)] = 255
 
 
-        cv2.imshow("img", img);
-        cv2.imshow("mask corners", mask[0]);
-        cv2.imshow("mask segmentation", mask[1]);
-        cv2.waitKey(0)
 
 
 

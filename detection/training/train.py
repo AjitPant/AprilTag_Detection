@@ -20,7 +20,7 @@ def main(hparams):
     model.train()
 
     os.makedirs(hparams.log_dir, exist_ok=True)
-    log_dir = os.path.join(hparams.log_dir, 'version_2')
+    log_dir = os.path.join(hparams.log_dir, 'version_4')
 
     checkpoint_callback = ModelCheckpoint(
         monitor = 'loss',
@@ -39,7 +39,7 @@ def main(hparams):
 
     trainer = Trainer(
         num_nodes=1,
-        max_epochs = 8,
+        max_epochs = 5,
         accelerator='ddp',
         gpus=hparams.n_gpu,
         checkpoint_callback=checkpoint_callback,
