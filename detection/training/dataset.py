@@ -123,7 +123,7 @@ class DirDataset(Dataset):
 
         mask[0].fill(0)
 
-        d = 1
+        d = 3
 
         for point in keypoints:
             mask[0][max(0, int(point[1]) -d): min(img.shape[0], int(point[1])+d+1), max(0, int(point[0]) -d): min(img.shape[1], int(point[0])+d+1)] = 255

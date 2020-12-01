@@ -392,7 +392,7 @@ def reduce_to_tags(net, net_id, img, response_1, response_2, filename, hparams):
 
 
 
-def predict(net, img, device='cuda', threshold=0.125, kernel =768, stride =512):
+def predict(net, img, device='cuda', threshold=0.125, kernel =1024, stride =768):
     with torch.no_grad():
         ds = DirDataset('', '')
         _img = (ds.preprocess(img))
