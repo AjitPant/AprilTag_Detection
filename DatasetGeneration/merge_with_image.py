@@ -145,12 +145,12 @@ def augment_and_save(file, overlayer, args):
                 print("Failed to load the {}. Make sure it exists.", path)
                 exit()
 
-            img = cv2.resize(img, (512*4, 512*4))
+            img = cv2.resize(img, (512*2, 512*2))
             img_out, response_1, response_2, response_3 ,response_id, corners_collection = overlayer(img)
 
-            img_out = cv2.resize(img_out, (1024, 1024))
-            response_1 = cv2.resize(response_1, (1024, 1024))
-            response_2 = cv2.resize(response_2, (1024, 1024))
+            img_out = cv2.resize(img_out, (1024//2, 1024//2))
+            response_1 = cv2.resize(response_1, (1024//2, 1024//2))
+            response_2 = cv2.resize(response_2, (1024//2, 1024//2))
 
             corners_collection = [ x/2 for x in corners_collection]
 
@@ -196,12 +196,12 @@ def app():
     parser.add_argument(
         '--size',
         type=int,
-        default=2048,
+        default=1024,
         help='Size of April tag images in pixels.')
     parser.add_argument(
        '--mx_tags',
         type=int,
-        default=2048,
+        default=30,
         help='Maximum number of tags to generate in an image')
     args = parser.parse_args()
 
