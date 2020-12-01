@@ -14,8 +14,8 @@ class DirDataset(Dataset):
         self.img_dir = img_dir
         self.mask_dir = mask_dir
         self.scale = scale
-        original_height = 512*2
-        original_width = 512*2
+        original_height = 512*2//2
+        original_width = 512*2//2
 
 
         self.aug = A.Compose([
@@ -54,11 +54,11 @@ class DirDataset(Dataset):
                 # A.RandomSnow(p=1.0),
                 A.RandomRain(),
                 A.RandomFog( fog_coef_lower = 0.1, fog_coef_upper = 0.3),
-            ], p=0.1),
+            ], p=0.5),
             A.OneOf([
                 A.RandomShadow(p=0.8, num_shadows_upper=5),
                 A.RandomSunFlare(src_radius=40),
-            ], p=0.3),
+            ], p=0.4),
             A.OneOf([
                 A.RandomBrightnessContrast(p=0.5),
                 A.RGBShift(p=0.5),
@@ -89,6 +89,11 @@ class DirDataset(Dataset):
         if not mask:
             trans = transforms.Compose([
                 transforms.ToTensor(),
+
+                transforms.RandomErasing(p=0.4, scale=(0.01, 0.3), ratio=(0.3, 3.3), value=(100,20,0), inplace=True),
+                transforms.RandomErasing(p=0.4, scale=(0.01, 0.3), ratio=(0.3, 3.3), value=(13,50,0), inplace=True),
+                transforms.RandomErasing(p=0.4, scale=(0.01, 0.3), ratio=(0.3, 3.3), value=(15,58,10), inplace=True),
+
                 transforms.Normalize([0.485, 0.456, 0.406], [
                                      0.229, 0.224, 0.225]),
             ])
