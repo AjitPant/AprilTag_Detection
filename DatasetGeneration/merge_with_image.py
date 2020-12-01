@@ -152,7 +152,7 @@ def augment_and_save(file, overlayer, args):
             response_1 = cv2.resize(response_1, (1024//2, 1024//2))
             response_2 = cv2.resize(response_2, (1024//2, 1024//2))
 
-            corners_collection = [ x/2 for x in corners_collection]
+            corners_collection = [ [x/2 for x in y ]  for y in corners_collection]
 
             cv2.imwrite(os.path.join(args.out_folder, 'img',
                                      filename[:-4] + "_" + str(j) + '.jpg'), img_out)
