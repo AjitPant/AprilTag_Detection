@@ -145,14 +145,14 @@ def augment_and_save(file, overlayer, args):
                 print("Failed to load the {}. Make sure it exists.", path)
                 exit()
 
-            img = cv2.resize(img, (512*2, 512*2))
+            img = cv2.resize(img, (512*8, 512*8))
             img_out, response_1, response_2, response_3 ,response_id, corners_collection = overlayer(img)
 
-            img_out = cv2.resize(img_out, (1024//2, 1024//2))
-            response_1 = cv2.resize(response_1, (1024//2, 1024//2))
-            response_2 = cv2.resize(response_2, (1024//2, 1024//2))
+            img_out = cv2.resize(img_out, (1024, 1024), interpolation = cv2.INTER_AREA)
+            response_1 = cv2.resize(response_1, (1024, 1024), interpolation = cv2.INTER_AREA)
+            response_2 = cv2.resize(response_2, (1024, 1024), interpolation = cv2.INTER_AREA)
 
-            corners_collection = [ [x/2 for x in y ]  for y in corners_collection]
+            corners_collection = [ [x/4 for x in y ]  for y in corners_collection]
 
             cv2.imwrite(os.path.join(args.out_folder, 'img',
                                      filename[:-4] + "_" + str(j) + '.jpg'), img_out)
@@ -196,7 +196,7 @@ def app():
     parser.add_argument(
         '--size',
         type=int,
-        default=1024,
+        default=1024 + 512,
         help='Size of April tag images in pixels.')
     parser.add_argument(
        '--mx_tags',
@@ -213,11 +213,11 @@ def app():
     generator = AprilTagGenerator(root=args.root,
                                   family=args.family,
                                   size=args.size,
-                                  rx_lim_deg=(-70, 70),
-                                  ry_lim_deg=(-70, 70),
+                                  rx_lim_deg=(-30, 30),
+                                  ry_lim_deg=(-30, 30),
                                   rz_lim_deg=(-180, 180),
-                                  scalex_lim=(1.0/128, 1.0/8),
-                                  scaley_lim=(1.0/128, 1.0/8),
+                                  scalex_lim=(1.0/128, 1.0/4),
+                                  scaley_lim=(1.0/128, 1.0/4),
                                   )
 
     print(len(generator))
@@ -227,9 +227,9 @@ def app():
 
     n_processors = 16
 
-    mx_files = 40
+    mx_files = 4000
 
-    file_list = sorted(list(os.listdir(directory))[2*mx_files:4*mx_files])
+    file_list = sorted(list(os.listdir(directory))[3*mx_files:4*mx_files])
 
     '''
     pass the task function, followed by the parameters to processors

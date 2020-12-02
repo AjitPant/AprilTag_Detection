@@ -14,14 +14,14 @@ class DirDataset(Dataset):
         self.img_dir = img_dir
         self.mask_dir = mask_dir
         self.scale = scale
-        original_height = 512*2//2
-        original_width = 512*2//2
+        original_height = 512*2
+        original_width = 512*2
 
 
         self.aug = A.Compose([
 
             A.OneOf([
-                A.RandomSizedCrop(min_max_height=(original_height//4, original_height),
+                A.RandomSizedCrop(min_max_height=(original_height//16, original_height),
                                   height=original_height, width=original_width, p=0.5),
                 A.PadIfNeeded(min_height=original_height,
                               min_width=original_width, p=0.5)
@@ -42,7 +42,7 @@ class DirDataset(Dataset):
             A.OneOf([
                 A.VerticalFlip(p=0.5),
                 A.HorizontalFlip(p=0.5),
-            ], p=0.1),
+            ], p=0.8),
 
             A.OneOf([
                 A.RandomRotate90(p=0.5),
@@ -128,7 +128,7 @@ class DirDataset(Dataset):
 
         mask[0].fill(0)
 
-        d = 3
+        d = 2
 
         for point in keypoints:
             mask[0][max(0, int(point[1]) -d): min(img.shape[0], int(point[1])+d+1), max(0, int(point[0]) -d): min(img.shape[1], int(point[0])+d+1)] = 255
