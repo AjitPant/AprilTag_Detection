@@ -14,8 +14,8 @@ class DirDataset(Dataset):
         self.img_dir = img_dir
         self.mask_dir = mask_dir
         self.scale = scale
-        original_height = 512*2//2
-        original_width = 512*2//2
+        original_height = 512*2
+        original_width = 512*2
 
 
         self.aug = A.Compose([
