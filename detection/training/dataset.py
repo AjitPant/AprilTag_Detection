@@ -21,7 +21,7 @@ class DirDataset(Dataset):
         self.aug = A.Compose([
 
             A.OneOf([
-                A.RandomSizedCrop(min_max_height=(original_height//4, original_height),
+                A.RandomSizedCrop(min_max_height=(original_height//16, original_height),
                                   height=original_height, width=original_width, p=0.5),
                 A.PadIfNeeded(min_height=original_height,
                               min_width=original_width, p=0.5)
@@ -42,7 +42,7 @@ class DirDataset(Dataset):
             A.OneOf([
                 A.VerticalFlip(p=0.5),
                 A.HorizontalFlip(p=0.5),
-            ], p=0.1),
+            ], p=0.8),
 
             A.OneOf([
                 A.RandomRotate90(p=0.5),
