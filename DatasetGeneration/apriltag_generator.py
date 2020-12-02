@@ -33,7 +33,7 @@ class AprilTagGenerator(object):
     def __getitem__(self, idx):
         assert idx < len(self.apriltags), 'Not a valid index.'
         pad_width = self.size // 2
-        src_image = np.pad(self.apriltags.image(idx), pad_width=pad_width, mode='constant', constant_values=0)
+        src_image = np.pad(self.apriltags.image(idx), pad_width=pad_width, mode='constant', constant_values=255)
         src_width = src_image.shape[1]
         src_corners_uv = (self.apriltags.corners() * self.apriltags.size + pad_width) / src_width
 

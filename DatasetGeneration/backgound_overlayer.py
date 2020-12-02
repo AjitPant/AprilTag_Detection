@@ -48,7 +48,7 @@ class backgroundOverlayer(object):
 
             corners_coords = result["corners_uv"]
 
-            mask = np.maximum(mask, tag_img)
+            # mask = np.maximum(mask, tag_img)
             _, mask = cv2.threshold(mask, 254, 255, cv2.THRESH_BINARY)
             mask_inv = cv2.bitwise_not(mask)
 

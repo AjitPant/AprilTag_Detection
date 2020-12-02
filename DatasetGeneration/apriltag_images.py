@@ -3,6 +3,8 @@ import numpy as np
 import os
 
 TAG36h11 = 'tag36h11'
+TAG41h12 = 'tag41h12'
+TAG52h13 = 'tag52h13'
 
 
 class AprilTagImages(object):
@@ -38,6 +40,10 @@ class AprilTagImages(object):
 
         if self.family == TAG36h11:
             step = 10
+        elif self.family == TAG41h12:
+            step = 9
+        elif self.family == TAG52h13:
+            step = 10
         else:
             assert False, 'Unknown April tag family!' + self.family
 
@@ -61,10 +67,16 @@ class AprilTagImages(object):
         if self.family == TAG36h11:
             lo = 0.1
             hi = 0.9
+        elif self.family == TAG41h12:
+            lo = 1/9.0
+            hi = 8/9.0
+        elif self.family == TAG52h13:
+            lo = 0.1
+            hi = 0.9
         else:
             assert False, 'Unknown April tag family!' + self.family
         return np.array([[[lo, lo], [hi, lo], [hi, hi], [lo, hi]],
-                         [[0.05, 0.05], [1-0.05, 0.05], [1-0.05, 1-0.05], [0.05, 1-0.05]]], dtype=np.float32)
+                         [[0.00, 0.00], [1-0.00, 0.00], [1-0.00, 1-0.00], [0.00, 1-0.00]]], dtype=np.float32)
 
     def image(self, idx):
                     assert idx < len(self.images), 'Not a valid index.'

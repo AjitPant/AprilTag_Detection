@@ -145,7 +145,7 @@ def augment_and_save(file, overlayer, args):
                 print("Failed to load the {}. Make sure it exists.", path)
                 exit()
 
-            img = cv2.resize(img, (512*8, 512*8))
+            img = cv2.resize(img, (512*2, 512*2))
             img_out, response_1, response_2, response_3 ,response_id, corners_collection = overlayer(img)
 
             img_out = cv2.resize(img_out, (1024, 1024), interpolation = cv2.INTER_AREA)
@@ -196,7 +196,7 @@ def app():
     parser.add_argument(
         '--size',
         type=int,
-        default=1024 + 512,
+        default=1024//2 ,
         help='Size of April tag images in pixels.')
     parser.add_argument(
        '--mx_tags',
@@ -225,9 +225,9 @@ def app():
     directory = os.fsencode(args.img_folder)
     i = 0
 
-    n_processors = 16
+    n_processors = 1
 
-    mx_files = 4000
+    mx_files = 40
 
     file_list = sorted(list(os.listdir(directory))[3*mx_files:4*mx_files])
 
