@@ -55,10 +55,10 @@ def reduce_to_tags(net, net_id, img, response_1, response_2, filename, hparams):
     mask_corners = response_2
     segregates = []
 
-    mask_corners =  (mask_corners>0.125).astype(np.uint8)
+    mask_corners =  (mask_corners>0.5).astype(np.uint8)
 
-    kernel = np.ones((5,5),np.uint8)
-    mask_segmentation = cv2.erode(mask_segmentation,kernel,iterations = 2)
+    # kernel = np.ones((5,5),np.uint8)
+    # mask_segmentation = cv2.erode(mask_segmentation,kernel,iterations = 2)
 
 
     cv2.namedWindow('mask_segmentation', cv2.WINDOW_NORMAL)
@@ -392,7 +392,7 @@ def reduce_to_tags(net, net_id, img, response_1, response_2, filename, hparams):
 
 
 
-def predict(net, img, device='cuda', threshold=0.125, kernel =1024, stride =768):
+def predict(net, img, device='cuda', threshold=0.9, kernel =1024, stride =768):
     with torch.no_grad():
         ds = DirDataset('', '')
         _img = (ds.preprocess(img))
@@ -470,13 +470,14 @@ def main(hparams):
         img_list = [str(item) for item in glob.glob(hparams.img)]
 
         for img_str in img_list:
-            # im_size = 1024+1*1024 + 0*256//2
+            im_size = 1024
             img = Image.open(img_str).convert('RGB')
 
+
+
+            img = img.resize((im_size, im_size))
+
             width, height = img.size
-
-
-            # img = img.resize((im_size, im_size))
             open_cv_image = np.array(img)
             # Convert RGB to BGR
             open_cv_image = open_cv_image[:, :, ::-1].copy()
