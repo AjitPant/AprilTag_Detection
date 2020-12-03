@@ -33,7 +33,7 @@ class AprilTagGenerator(object):
     def __getitem__(self, idx):
         assert idx < len(self.apriltags), 'Not a valid index.'
         pad_width = self.size // 2
-        src_image = np.pad(self.apriltags.image(idx), pad_width=pad_width, mode='constant', constant_values=0)
+        src_image = np.pad(self.apriltags.image(idx), pad_width=pad_width, mode='constant', constant_values=255)
         src_width = src_image.shape[1]
         src_corners_uv = (self.apriltags.corners() * self.apriltags.size + pad_width) / src_width
 
@@ -50,8 +50,9 @@ class AprilTagGenerator(object):
         return dict(
             image=dst_image,
             mask=mask,
-            response=self.get_response(dst_corners_uv[0], dst_width, dst_height),
-            corners_uv=dst_corners_uv[0])
+            response=self.get_response(dst_corners_uv[0], dst_width, dst_height)[0],
+            response_in_use=self.get_response(dst_corners_uv[0], dst_width, dst_height)[1],
+            corners_uv=dst_corners_uv[0]*np.array([dst_width, dst_height]))
 
 
     @staticmethod
@@ -67,6 +68,9 @@ class AprilTagGenerator(object):
         response = np.zeros((height, width, num_feats + 1), dtype=np.uint8)
         response[:, :, -1] = 255
 
+        response_in_use = np.zeros((height, width, num_feats + 1), dtype=np.uint8)
+        response_in_use[:, :, -1] = 255
+
         d1 = 1
         d2 = 1
         for i in range(num_feats):
@@ -76,10 +80,11 @@ class AprilTagGenerator(object):
             y = int(round(corners[i, 1] * height))
 
 
-            for j in range(max(0, y-d1), min(height, y+d1+1)):
-                for k in range(max(0, x-d1), min(width, x+d1+1)):
-                    response[j,k, i] = 255/(1+0*random.randint(1,10))
 
+            response[max(0, y - d2):min(height, y + d2 + 1), max(0, x - d2):min(width, x + d2 + 1), 0] = 255
             response[max(0, y - d2):min(height, y + d2 + 1), max(0, x - d2):min(width, x + d2 + 1), -1] = 0
+
+            response_in_use[max(0, y - d2):min(height, y + d2 + 1), max(0, x - d2):min(width, x + d2 + 1), i] = 255
+            response_in_use[max(0, y - d2):min(height, y + d2 + 1), max(0, x - d2):min(width, x + d2 + 1), -1] = 0
             # print(np.random.multivariate_normal((x, y), [[1,0],[0,1]], size = (2,2)))
-        return response
+        return response, response_in_use

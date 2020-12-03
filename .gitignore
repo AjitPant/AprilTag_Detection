@@ -140,7 +140,10 @@ dmypy.json
 **/*.txt
 **/*.pt
 **/*.pth
+**/*.pkl
+**/*.png
 **/*.ckpt
+**/*.out
 
 **/back
 **/model_nightly
@@ -153,7 +156,8 @@ models/
 img/
 dataset/
 mask/
-mask/
+**/mask/
+**/img/
 back/
 test
 lightning_logs

@@ -4,6 +4,8 @@ from tqdm import tqdm
 from PIL import Image
 import numpy as np, torch
 from torch.utils.data import Dataset
+import torchvision.transforms.functional as TF
+
 from torchvision import transforms, datasets, models
 
 class DirDataset(Dataset):
@@ -20,17 +22,22 @@ class DirDataset(Dataset):
             self.ids = []
 
     def __len__(self):
-        return min(3000, len(self.ids))
+        return min(3000000, len(self.ids))
 
     def preprocess(self, img, mask=False):
 
         if not mask:
             trans = transforms.Compose([
                 # transforms.RandomGrayscale(),
+
                 # transforms.ColorJitter(0.3,0.3, 0.3, 0.1 ),
                 transforms.ToTensor(),
-                transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
-                # transforms.RandomErasing(p=0.5, scale=(0.001, 0.01), ratio=(0.3, 3.3), value=(0,0,0), inplace=True),
+                transforms.RandomErasing(p=0.5, scale=(0.01, 0.1), ratio=(0.3, 3.3), value=(1,0,1), inplace=True),
+                # transforms.RandomErasing(p=0.5, scale=(0.01, 0.1), ratio=(0.3, 3.3), value=(1,0,1), inplace=True),
+                # transforms.RandomErasing(p=0.5, scale=(0.01, 0.1), ratio=(0.3, 3.3), value=(1,0,1), inplace=True),
+                # transforms.RandomErasing(p=0.5, scale=(0.01, 0.1), ratio=(0.3, 3.3), value=(1,0,1), inplace=True),
+                # transforms.RandomErasing(p=0.5, scale=(0.01, 0.1), ratio=(0.3, 3.3), value=(1,0,1), inplace=True),
+                # transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
                 ])
 
 
@@ -48,20 +55,31 @@ class DirDataset(Dataset):
         # assert len(mask_files) == 2, f"{idx}: {mask_files}"
 
         img = Image.open(img_files[0])
-        file = open(label_files[0],"r")
+        if os.path.exists(label_files[0]):
 
-        label = int(file.read())
+            file = open(label_files[0],"r")
+            label = int(file.read())
+        else:
+            label = 587
+            trans = transforms.Compose([
+                transforms.RandomCrop(size = (224, 224), pad_if_needed=True)
+                ])
 
-        if random.random() > 1.5:
+            img = trans(img)
+
+
+
+        if random.random() > 0.5:
+
             img = transforms.functional.hflip(img)
 
         # Random vertical flipping
-        if random.random() > 1.5:
+        if random.random() > 0.5:
             img = transforms.functional.vflip(img)
 
 
         # Random affine
-        if random.random() > 1.5:
+        if random.random() > 0.3:
             rotation = random.randint(-180, 180)
             translate = [random.randint(-10,10), random.randint(-10,10)]
             scale = 1.0
@@ -72,6 +90,8 @@ class DirDataset(Dataset):
 
 
         img = self.preprocess(img)
+        # cv2.imshow("a",img.cpu().numpy().transpose(1, 2, 0))
+        # cv2.waitKey(0);
 
 
 

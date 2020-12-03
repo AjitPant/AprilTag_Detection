@@ -21,24 +21,23 @@ class DirDataset(Dataset):
             self.ids = []
 
     def __len__(self):
-        return min(3000, len(self.ids))
+        return min(1000, len(self.ids))
 
     def preprocess(self, img, mask=False):
 
         if not mask:
             trans = transforms.Compose([
-                # transforms.RandomGrayscale(),
-                # transforms.ColorJitter(0.3,0.3, 0.3, 0.1 ),
+                transforms.RandomGrayscale(),
+                transforms.ColorJitter(0.4,0.4, 0.4, 0.2 ),
                 transforms.ToTensor(),
-                # transforms.RandomErasing(p=0.1, scale=(0.001, 0.05), ratio=(0.3, 3.3), value=(0,0,0), inplace=True),
-                # transforms.RandomErasing(p=0.2, scale=(0.001, 0.05), ratio=(0.3, 3.3), value=(10,10,10), inplace=True),
-                # transforms.RandomErasing(p=0.3, scale=(0.001, 0.05), ratio=(0.3, 3.3), value=(0,30,0), inplace=True),
-                # transforms.RandomErasing(p=0.4, scale=(0.001, 0.05), ratio=(0.3, 3.3), value=(50,0,200), inplace=True),
-                # transforms.RandomErasing(p=0.4, scale=(0.001, 0.05), ratio=(0.3, 3.3), value=(100,20,0), inplace=True),
-                # transforms.RandomErasing(p=0.4, scale=(0.001, 0.05), ratio=(0.3, 3.3), value=(13,50,0), inplace=True),
-                # transforms.RandomErasing(p=0.4, scale=(0.001, 0.05), ratio=(0.3, 3.3), value=(15,58,10), inplace=True),
+                transforms.RandomErasing(p=0.1, scale=(0.001, 0.05), ratio=(0.3, 3.3), value=(0,0,0), inplace=True),
+                transforms.RandomErasing(p=0.2, scale=(0.001, 0.05), ratio=(0.3, 3.3), value=(10,10,10), inplace=True),
+                transforms.RandomErasing(p=0.3, scale=(0.001, 0.05), ratio=(0.3, 3.3), value=(0,30,0), inplace=True),
+                transforms.RandomErasing(p=0.4, scale=(0.001, 0.05), ratio=(0.3, 3.3), value=(50,0,200), inplace=True),
+                transforms.RandomErasing(p=0.4, scale=(0.001, 0.05), ratio=(0.3, 3.3), value=(100,20,0), inplace=True),
+                transforms.RandomErasing(p=0.4, scale=(0.001, 0.05), ratio=(0.3, 3.3), value=(13,50,0), inplace=True),
+                transforms.RandomErasing(p=0.4, scale=(0.001, 0.05), ratio=(0.3, 3.3), value=(15,58,10), inplace=True),
                 transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
-                # transforms.RandomErasing(p=0.5, scale=(0.001, 0.01), ratio=(0.3, 3.3), value=(0,0,0), inplace=True),
                 ])
 
 
@@ -50,10 +49,6 @@ class DirDataset(Dataset):
         idx = self.ids[i ]
         img_files = [os.path.join(self.img_dir, idx + '.jpg')]
         mask_files = [os.path.join(self.mask_dir, idx + '_0.png'),
-                      os.path.join(self.mask_dir, idx + '_1.png'),
-                      os.path.join(self.mask_dir, idx + '_2.png'),
-                      os.path.join(self.mask_dir, idx + '_3.png'),
-                      os.path.join(self.mask_dir, idx + '_4.png'),
                       os.path.join(self.mask_dir, idx + '_5.png'),]
 
 
@@ -63,7 +58,7 @@ class DirDataset(Dataset):
         img = Image.open(img_files[0])
         mask = [Image.open(mask_file) for mask_file in mask_files]
 
-        if random.random() > 1.5:
+        if random.random() > 0.5:
             img = transforms.functional.hflip(img)
             real_mask = [];
             for  mas in mask:
@@ -72,7 +67,7 @@ class DirDataset(Dataset):
             mask = real_mask
 
         # Random vertical flipping
-        if random.random() > 1.5:
+        if random.random() > 0.5:
             img = transforms.functional.vflip(img)
             real_mask = [];
             for  mas in mask:
@@ -82,9 +77,9 @@ class DirDataset(Dataset):
 
 
         # Random affine
-        if random.random() > 1.0:
+        if random.random() > 0.5:
             rotation = random.randint(-180, 180)
-            translate = [random.randint(-10,10), random.randint(-10,10)]
+            translate = [random.randint(-100,100), random.randint(-100,100)]
             scale = 1.0
             shear = random.randint(-50, 50)
 
@@ -113,7 +108,7 @@ class DirDataset(Dataset):
         # cv2.waitKey(0)
         img = self.preprocess(img)
 
-        # cv2.imshow("img"+str(i), np.array(img.cpu().numpy().transpose(1, 2, 0)))
+        # cv2.imshow("img"+str(i), np.array(img.cpu().numpy().transpose(2, 1, 0)))
         # cv2.imshow("mask"+str(i), mask[0].cpu().numpy());
         # cv2.imshow("mask_1"+str(i), mask[1].cpu().numpy());
         # cv2.imshow("mask_2"+str(i), mask[2].cpu().numpy());
