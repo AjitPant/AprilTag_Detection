@@ -7,7 +7,7 @@ import copy
 import argparse
 import cv2
 import numpy as np
-from apriltag_images import TAG36h11, AprilTagImages
+from apriltag_images import TAG36h11,TAG41h12, AprilTagImages
 from apriltag_generator import AprilTagGenerator
 from backgound_overlayer import backgroundOverlayer
 
@@ -145,14 +145,14 @@ def augment_and_save(file, overlayer, args):
                 print("Failed to load the {}. Make sure it exists.", path)
                 exit()
 
-            img = cv2.resize(img, (512*8, 512*8))
+            img = cv2.resize(img, (512*4, 512*4))
             img_out, response_1, response_2, response_3 ,response_id, corners_collection = overlayer(img)
 
             img_out = cv2.resize(img_out, (1024, 1024), interpolation = cv2.INTER_AREA)
             response_1 = cv2.resize(response_1, (1024, 1024), interpolation = cv2.INTER_AREA)
             response_2 = cv2.resize(response_2, (1024, 1024), interpolation = cv2.INTER_AREA)
 
-            corners_collection = [ [x/4 for x in y ]  for y in corners_collection]
+            corners_collection = [ [x/2 for x in y ]  for y in corners_collection]
 
             cv2.imwrite(os.path.join(args.out_folder, 'img',
                                      filename[:-4] + "_" + str(j) + '.jpg'), img_out)
@@ -181,7 +181,7 @@ def app():
     parser.add_argument(
         '--img_folder',
         type=str,
-        default='/raid/apant_ma/AprilTag-Detection/AprilTag_Detection/DatasetGeneration/../../dataset/',
+        default='/raid/apant_ma/AprilTag-Detection/AprilTag_Detection/DatasetGeneration/../../dataset_white/',
         help='Folder which contains background images')
     parser.add_argument(
         '--out_folder',
@@ -191,12 +191,12 @@ def app():
     parser.add_argument(
         '--family',
         type=str,
-        default=TAG36h11,
+        default=TAG41h12,
         help='April tag family.')
     parser.add_argument(
         '--size',
         type=int,
-        default=1024+512,
+        default=512+256,
         help='Size of April tag images in pixels.')
     parser.add_argument(
        '--mx_tags',
@@ -216,8 +216,8 @@ def app():
                                   rx_lim_deg=(-30, 30),
                                   ry_lim_deg=(-30, 30),
                                   rz_lim_deg=(-180, 180),
-                                  scalex_lim=(1.0/128, 1.0/4),
-                                  scaley_lim=(1.0/128, 1.0/4),
+                                  scalex_lim=(1.0/128, 1.0/2),
+                                  scaley_lim=(1.0/128, 1.0/2),
                                   )
 
     print(len(generator))
@@ -225,11 +225,11 @@ def app():
     directory = os.fsencode(args.img_folder)
     i = 0
 
-    n_processors = 1
+    n_processors = 16
 
-    mx_files = 40
+    mx_files = 4000
 
-    file_list = sorted(list(os.listdir(directory))[3*mx_files:4*mx_files])
+    file_list = sorted(list(os.listdir(directory))[0*mx_files:1*mx_files])
 
     '''
     pass the task function, followed by the parameters to processors

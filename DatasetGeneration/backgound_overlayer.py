@@ -150,13 +150,13 @@ class backgroundOverlayer(object):
             background_img = add_parallel_light(background_img)
 
 
-        if np.random.uniform(0, 1, 1)[0] > 0.5:
+        if np.random.uniform(0, 1, 1)[0] > 1.5:
             background_img = add_noise(background_img, "gauss")
 
-        if np.random.uniform(0, 1, 1)[0] > 0.8:
+        if np.random.uniform(0, 1, 1)[0] > 1.8:
             background_img = add_noise(background_img, "s&p")
 
-        if np.random.uniform(0, 1, 1)[0] > 0.8:
+        if np.random.uniform(0, 1, 1)[0] > 1.8:
             background_img = add_noise(background_img, "speckle")
 
         # Motion blur

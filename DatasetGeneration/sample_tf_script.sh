@@ -30,6 +30,7 @@ pwd; hostname; date |tee result
 echo $CUDA_VISIBLE_DEVICES
 
 
+#docker kill d1b0f4382b80
 docker container ls
 nvidia-smi
 #docker build -t pytorchlightning-mod/pytorch-lightning:base-conda-py3.8-torch1.8 .
@@ -38,7 +39,7 @@ nvidia-smi
 
 
 #nvidia-docker run  --rm  -v /raid//apant_ma/:/raid/apant_ma pytorchlightning-mod/pytorch-lightning:base-conda-py3.8-torch1.7 python -c "import shutil;shutil.rmtree('/raid/apant_ma/AprilTag-Detection/AprilTag_Detection/DatasetGeneration/__pycache__')"
-nvidia-docker run  -t ${USER_TTY} --name $SLURM_JOB_ID --user $(id -u):$(id -g)  --rm -v /raid//apant_ma/:/raid/apant_ma pytorchlightning-mod/pytorch-lightning:base-conda-py3.8-torch1.8 python /raid/apant_ma/AprilTag-Detection/AprilTag_Detection/DatasetGeneration/merge_with_image.py
+nvidia-docker run  --ipc=host -t ${USER_TTY} --name $SLURM_JOB_ID --user $(id -u):$(id -g)  --rm -v /raid//apant_ma/:/raid/apant_ma pytorchlightning-mod/pytorch-lightning:base-conda-py3.8-torch1.8 python /raid/apant_ma/AprilTag-Detection/AprilTag_Detection/DatasetGeneration/merge_with_image.py 
 
 
 docker container ls
