@@ -90,9 +90,9 @@ class DirDataset(Dataset):
             trans = transforms.Compose([
                 transforms.ToTensor(),
 
-                transforms.RandomErasing(p=0.4, scale=(0.01, 0.3), ratio=(0.3, 3.3), value=(100,20,0), inplace=True),
-                transforms.RandomErasing(p=0.4, scale=(0.01, 0.3), ratio=(0.3, 3.3), value=(13,50,0), inplace=True),
-                transforms.RandomErasing(p=0.4, scale=(0.01, 0.3), ratio=(0.3, 3.3), value=(15,58,10), inplace=True),
+                # transforms.RandomErasing(p=0.4, scale=(0.01, 0.3), ratio=(0.3, 3.3), value=(100,20,0), inplace=True),
+                # transforms.RandomErasing(p=0.4, scale=(0.01, 0.3), ratio=(0.3, 3.3), value=(13,50,0), inplace=True),
+                # transforms.RandomErasing(p=0.4, scale=(0.01, 0.3), ratio=(0.3, 3.3), value=(15,58,10), inplace=True),
 
                 transforms.Normalize([0.485, 0.456, 0.406], [
                                      0.229, 0.224, 0.225]),
@@ -136,13 +136,18 @@ class DirDataset(Dataset):
 
 
 
-
         mask = torch.FloatTensor(mask)
         mask = ((mask / 255)).float()
 
-        img = Image.fromarray(img)
+        img = Image.fromarray(img.astype(np.uint8))
 
         img = self.preprocess(img)
+
+        assert -10<= img.max() <= 10
+        assert -10<= img.min() <= 10
+        assert 0<= mask.max() <= 1
+        assert 0<= mask.min() <= 1
+
 
         return (
             img,

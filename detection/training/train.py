@@ -21,7 +21,7 @@ def main(hparams):
 
     os.makedirs(hparams.log_dir, exist_ok=True)
     log_dir = os.path.join(hparams.log_dir, 'version_4')
-  
+
     assert hparams.checkpoint is None or  os.path.exists(hparams.checkpoint)
 
     checkpoint_callback = ModelCheckpoint(
@@ -41,7 +41,7 @@ def main(hparams):
 
     trainer = Trainer(
         num_nodes=1,
-        max_epochs = 80,
+        max_epochs = 10,
         accelerator='ddp',
         gpus=hparams.n_gpu,
         checkpoint_callback=checkpoint_callback,
