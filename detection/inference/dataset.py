@@ -113,6 +113,7 @@ class DirDataset(Dataset):
         # cv2.waitKey(0)
         img = self.preprocess(img)
 
+
         # cv2.imshow("img"+str(i), np.array(img.cpu().numpy().transpose(1, 2, 0)))
         # cv2.imshow("mask"+str(i), mask[0].cpu().numpy());
         # cv2.imshow("mask_1"+str(i), mask[1].cpu().numpy());
