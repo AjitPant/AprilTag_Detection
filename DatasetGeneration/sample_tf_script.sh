@@ -30,7 +30,7 @@ pwd; hostname; date |tee result
 echo $CUDA_VISIBLE_DEVICES
 
 
-#docker kill d1b0f4382b80
+#docker kill 27a91394003d
 docker container ls
 nvidia-smi
 #docker build -t pytorchlightning-mod/pytorch-lightning:base-conda-py3.8-torch1.8 .

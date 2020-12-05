@@ -68,8 +68,8 @@ class AprilTagImages(object):
             lo = 0.1
             hi = 0.9
         elif self.family == TAG41h12:
-            lo = 1/9.0
-            hi = 8/9.0
+            lo = 2/9.0
+            hi = 7/9.0
         elif self.family == TAG52h13:
             lo = 0.1
             hi = 0.9
