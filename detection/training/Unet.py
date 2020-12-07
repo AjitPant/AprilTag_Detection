@@ -238,7 +238,8 @@ class Unet(pl.LightningModule):
         y_hat = self.forward(x)
 
 
-        loss = F.binary_cross_entropy_with_logits(y_hat, y)
+        loss = F.binary_cross_entropy_with_logits(y_hat[:,0], y[:,0])
+        loss += F.binary_cross_entropy_with_logits(y_hat[:,1], y[:,1])
 
         tensorboard_logs = {'train_loss': loss}
         return {'loss': loss, 'log': tensorboard_logs}
@@ -248,7 +249,8 @@ class Unet(pl.LightningModule):
 
         y_hat = self.forward(x)
 
-        loss = F.binary_cross_entropy_with_logits(y_hat, y)
+        loss = F.binary_cross_entropy_with_logits(y_hat[:,0], y[:,0])
+        loss += F.binary_cross_entropy_with_logits(y_hat[:,1], y[:,1])
 
         return {'val_loss': loss}
 
