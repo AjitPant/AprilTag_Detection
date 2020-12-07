@@ -181,17 +181,17 @@ def app():
     parser.add_argument(
         '--img_folder',
         type=str,
-        default='/raid/apant_ma/AprilTag-Detection/AprilTag_Detection/DatasetGeneration/../../dataset_white/',
+        default='/raid/apant_ma/AprilTag-Detection/AprilTag_Detection/DatasetGeneration/../../dataset/',
         help='Folder which contains background images')
     parser.add_argument(
         '--out_folder',
         type=str,
-        default='/raid/apant_ma/AprilTag-Detection/AprilTag_Detection/DatasetGeneration/./out2',
+        default='/raid/apant_ma/AprilTag-Detection/AprilTag_Detection/DatasetGeneration/./out3',
         help='Output folder which contains dataset')
     parser.add_argument(
         '--family',
         type=str,
-        default=TAG41h12,
+        default=TAG36h11,
         help='April tag family.')
     parser.add_argument(
         '--size',
@@ -213,11 +213,11 @@ def app():
     generator = AprilTagGenerator(root=args.root,
                                   family=args.family,
                                   size=args.size,
-                                  rx_lim_deg=(-30, 30),
-                                  ry_lim_deg=(-30, 30),
+                                  rx_lim_deg=(-50, 50),
+                                  ry_lim_deg=(-50, 50),
                                   rz_lim_deg=(-180, 180),
-                                  scalex_lim=(1.0/128, 1.0/2),
-                                  scaley_lim=(1.0/128, 1.0/2),
+                                  scalex_lim=(1.0/128, 1.0),
+                                  scaley_lim=(1.0/128, 1.0),
                                   )
 
     print(len(generator))
@@ -229,7 +229,7 @@ def app():
 
     mx_files = 4000
 
-    file_list = sorted(list(os.listdir(directory))[0*mx_files:1*mx_files])
+    file_list = sorted(list(os.listdir(directory))[2*mx_files:3*mx_files])
 
     '''
     pass the task function, followed by the parameters to processors

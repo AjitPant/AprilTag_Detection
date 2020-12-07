@@ -190,7 +190,7 @@ class Unet(pl.LightningModule):
 
         self.in_channels=3
         self.n_classes=2
-        self.depth=5
+        self.depth=7
         self.wf=4
         self.padding=True
         self.batch_norm=True
