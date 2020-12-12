@@ -21,7 +21,7 @@ class DirDataset(Dataset):
         self.aug = A.Compose([
 
             A.OneOf([
-                A.RandomSizedCrop(min_max_height=(original_height//16, original_height),
+                A.RandomSizedCrop(min_max_height=(original_height//4, original_height),
                                   height=original_height, width=original_width, p=0.5),
                 A.PadIfNeeded(min_height=original_height,
                               min_width=original_width, p=0.5)
@@ -128,7 +128,7 @@ class DirDataset(Dataset):
 
         mask[0].fill(0)
 
-        d = 2
+        d = 4
 
         for point in keypoints:
             mask[0][max(0, int(point[1]) -d): min(img.shape[0], int(point[1])+d+1), max(0, int(point[0]) -d): min(img.shape[1], int(point[0])+d+1)] = 255

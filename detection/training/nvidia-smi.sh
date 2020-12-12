@@ -37,7 +37,7 @@ echo $CUDA_VISIBLE_DEVICES
 #nvidia-docker build -t pytorchlightning-mod/pytorch-lightning:base-conda-py3.8-torch1.7-train .
 #docker images
 
-docker kill af7899cb2899
+docker kill 60aa3587d1b1 
 top
 #scancel 1366
 
