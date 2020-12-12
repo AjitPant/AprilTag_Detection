@@ -237,7 +237,8 @@ class Unet(pl.LightningModule):
 
         y_hat = self.forward(x)
 
-
+        # print("y_hat.shape: ",y_hat.shape)
+        # print("y_hat.shape: ",y_hat[:,0].shape)
         loss = 100 *F.binary_cross_entropy_with_logits(y_hat[:,0], y[:,0])
         loss += F.binary_cross_entropy_with_logits(y_hat[:,1], y[:,1])
 
