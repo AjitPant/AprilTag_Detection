@@ -23,214 +23,137 @@ from torchvision import transforms, datasets, models
 
 import torchvision
 
-
-class ConvBlock(nn.Module):
-    """
-    Helper module that consists of a Conv -> BN -> ReLU
-    """
-
-    def __init__(self, in_channels, out_channels, padding=1, kernel_size=3, stride=1, with_nonlinearity=True):
-        super().__init__()
-        self.conv = nn.Conv2d(in_channels, out_channels, padding=padding, kernel_size=kernel_size, stride=stride)
-        self.bn = nn.BatchNorm2d(out_channels)
-        self.relu = nn.LeakyReLU()
-        self.with_nonlinearity = with_nonlinearity
-
-    def forward(self, x):
-        x = self.conv(x)
-        x = self.bn(x)
-        if self.with_nonlinearity:
-            x = self.relu(x)
-        return x
-
-
-class Bridge(nn.Module):
-    """
-    This is the middle layer of the UNet which just consists of some
-    """
-
-    def __init__(self, in_channels, out_channels):
-        super().__init__()
-        self.bridge = nn.Sequential(
-            ConvBlock(in_channels, out_channels),
-            ConvBlock(out_channels, out_channels)
-        )
-
-    def forward(self, x):
-        return self.bridge(x)
-
-
-class UpBlockForUNetWithResNet50(nn.Module):
-    """
-    Up block that encapsulates one up-sampling step which consists of Upsample -> ConvBlock -> ConvBlock
-    """
-
-    def __init__(self, in_channels, out_channels, up_conv_in_channels=None, up_conv_out_channels=None,
-                 upsampling_method="bilinear"):
-        super().__init__()
-
-        if up_conv_in_channels == None:
-            up_conv_in_channels = in_channels
-        if up_conv_out_channels == None:
-            up_conv_out_channels = out_channels
-
-        if upsampling_method == "conv_transpose":
-            self.upsample = nn.ConvTranspose2d(up_conv_in_channels, up_conv_out_channels, kernel_size=2, stride=2)
-        elif upsampling_method == "bilinear":
-            self.upsample = nn.Sequential(
-                nn.Upsample(mode='bilinear', scale_factor=2, align_corners =True),
-                nn.Conv2d(up_conv_in_channels,up_conv_out_channels, kernel_size=1, stride=1)
-            )
-        self.conv_block_1 = ConvBlock(in_channels, out_channels)
-        self.conv_block_2 = ConvBlock(out_channels, out_channels)
-
-    def forward(self, up_x, down_x):
-        """
-        :param up_x: this is the output from the previous up block
-        :param down_x: this is the output from the down block
-        :return: upsampled feature map
-        """
-        x = self.upsample(up_x)
-        x = torch.cat([x, down_x], 1)
-        x = self.conv_block_1(x)
-        x = self.conv_block_2(x)
-        return x
-
-
-def convrelu(in_channels, out_channels, kernel, padding):
-    return nn.Sequential(
-        nn.Conv2d(in_channels, out_channels, kernel, padding=padding),
-        nn.BatchNorm2d(out_channels),
-        nn.LeakyReLU(inplace=True),
-    )
-from torch import nn
+import torch
+import torch.nn as nn
 import torch.nn.functional as F
 
 
 
 
-class UNetConvBlock(nn.Module):
-    def __init__(self, in_size, out_size, padding, batch_norm):
-        super(UNetConvBlock, self).__init__()
-        block = []
 
-        block.append(nn.Conv2d(in_size, out_size, kernel_size=3, padding=int(padding)))
-        block.append(nn.ReLU())
-        if batch_norm:
-            block.append(nn.BatchNorm2d(out_size))
+class DoubleConv(nn.Module):
+    """
+    Double Convolution and BN and ReLU
+    (3x3 conv -> BN -> ReLU) ** 2
+    """
 
-        block.append(nn.Conv2d(out_size, out_size, kernel_size=3, padding=int(padding)))
-        block.append(nn.ReLU())
-        if batch_norm:
-            block.append(nn.BatchNorm2d(out_size))
-
-        self.block = nn.Sequential(*block)
+    def __init__(self, in_ch: int, out_ch: int):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Conv2d(in_ch, out_ch, kernel_size=3, padding=1),
+            nn.BatchNorm2d(out_ch),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(out_ch, out_ch, kernel_size=3, padding=1),
+            nn.BatchNorm2d(out_ch),
+            nn.ReLU(inplace=True)
+        )
 
     def forward(self, x):
-        out = self.block(x)
-        return out
+        return self.net(x)
 
 
-class UNetUpBlock(nn.Module):
-    def __init__(self, in_size, out_size, up_mode, padding, batch_norm):
-        super(UNetUpBlock, self).__init__()
-        if up_mode == 'upconv':
-            self.up = nn.ConvTranspose2d(in_size, out_size, kernel_size=2, stride=2)
-        elif up_mode == 'upsample':
-            self.up = nn.Sequential(
-                nn.Upsample(mode='bilinear', scale_factor=2),
-                nn.Conv2d(in_size, out_size, kernel_size=1),
+class Down(nn.Module):
+    """
+    Combination of MaxPool2d and DoubleConv in series
+    """
+
+    def __init__(self, in_ch: int, out_ch: int):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.MaxPool2d(kernel_size=2, stride=2),
+            DoubleConv(in_ch, out_ch)
+        )
+
+    def forward(self, x):
+        return self.net(x)
+
+
+class Up(nn.Module):
+    """
+    Upsampling (by either bilinear interpolation or transpose convolutions)
+    followed by concatenation of feature map from contracting path,
+    followed by double 3x3 convolution.
+    """
+
+    def __init__(self, in_ch: int, out_ch: int, bilinear: bool = False):
+        super().__init__()
+        self.upsample = None
+        if bilinear:
+            self.upsample = nn.Sequential(
+                nn.Upsample(scale_factor=2, mode="bilinear", align_corners=True),
+                nn.Conv2d(in_ch, in_ch // 2, kernel_size=1),
             )
+        else:
+            self.upsample = nn.ConvTranspose2d(in_ch, in_ch // 2, kernel_size=2, stride=2)
 
-        self.conv_block = UNetConvBlock(in_size, out_size, padding, batch_norm)
+        self.conv = DoubleConv(in_ch, out_ch)
 
-    def center_crop(self, layer, target_size):
-        _, _, layer_height, layer_width = layer.size()
-        diff_y = (layer_height - target_size[0]) // 2
-        diff_x = (layer_width - target_size[1]) // 2
-        return layer[
-            :, :, diff_y : (diff_y + target_size[0]), diff_x : (diff_x + target_size[1])
-        ]
+    def forward(self, x1, x2):
+        x1 = self.upsample(x1)
 
-    def forward(self, x, bridge):
-        up = self.up(x)
-        crop1 = self.center_crop(bridge, up.shape[2:])
-        out = torch.cat([up, crop1], 1)
-        out = self.conv_block(out)
+        # Pad x1 to the size of x2
+        diff_h = x2.shape[2] - x1.shape[2]
+        diff_w = x2.shape[3] - x1.shape[3]
 
-        return out
+        x1 = F.pad(x1, [diff_w // 2, diff_w - diff_w // 2, diff_h // 2, diff_h - diff_h // 2])
+
+        # Concatenate along the channels axis
+        x = torch.cat([x2, x1], dim=1)
+        return self.conv(x)
 
 class Unet(pl.LightningModule):
-    def __init__(
-        self,hparams
-    ):
-        """
-        Implementation of
-        U-Net: Convolutional Networks for Biomedical Image Segmentation
-        (Ronneberger et al., 2015)
-        https://arxiv.org/abs/1505.04597
-        Using the default arguments will yield the exact version used
-        in the original paper
-        Args:
-            in_channels (int): number of input channels
-            n_classes (int): number of output channels
-            depth (int): depth of the network
-            wf (int): number of filters in the first layer is 2**wf
-            padding (bool): if True, apply padding such that the input shape
-                            is the same as the output.
-                            This may introduce artifacts
-            batch_norm (bool): Use BatchNorm after layers with an
-                               activation function
-            up_mode (str): one of 'upconv' or 'upsample'.
-                           'upconv' will use transposed convolutions for
-                           learned upsampling.
-                           'upsample' will use bilinear upsampling.
-        """
-        super(Unet, self).__init__()
+    """
+    Architecture based on U-Net: Convolutional Networks for Biomedical Image Segmentation
+    Link - https://arxiv.org/abs/1505.04597
+    Parameters:
+        num_classes: Number of output classes required (default 19 for KITTI dataset)
+        num_layers: Number of layers in each side of U-net
+        features_start: Number of features in first layer
+        bilinear: Whether to use bilinear interpolation or transposed
+            convolutions for upsampling.
+    """
 
-        self.in_channels=3
-        self.n_classes=2
-        self.depth=7
-        self.wf=4
-        self.padding=True
-        self.batch_norm=True
-        self.up_mode='upconv'
+    def __init__(
+            self,
+            hparams,
+    ):
+        super().__init__()
+
+        num_classes: int = 2
+        num_layers: int = 4
+        features_start: int = 32
+        bilinear: bool = True
+
         self.hparams = hparams
 
-        assert self.up_mode in ('upconv', 'upsample')
-        self.padding = self.padding
-        self.depth = self.depth
-        prev_channels = self.in_channels
-        self.down_path = nn.ModuleList()
-        for i in range(self.depth):
-            self.down_path.append(
-                UNetConvBlock(prev_channels, 2 ** (self.wf + i), self.padding, self.batch_norm)
-            )
-            prev_channels = 2 ** (self.wf + i)
 
-        self.up_path = nn.ModuleList()
-        for i in reversed(range(self.depth - 1)):
-            self.up_path.append(
-                UNetUpBlock(prev_channels, 2 ** (self.wf + i), self.up_mode, self.padding, self.batch_norm)
-            )
-            prev_channels = 2 ** (self.wf + i)
+        self.num_layers = num_layers
 
-        self.last = nn.Conv2d(prev_channels, self.n_classes, kernel_size=1)
+        layers = [DoubleConv(3, features_start)]
+
+        feats = features_start
+        for _ in range(num_layers - 1):
+            layers.append(Down(feats, feats * 2))
+            feats *= 2
+
+        for _ in range(num_layers - 1):
+            layers.append(Up(feats, feats // 2, bilinear))
+            feats //= 2
+
+
+        layers.append(nn.Conv2d(feats, int(num_classes), kernel_size=1))
+
+        self.layers = nn.ModuleList(layers)
 
     def forward(self, x):
-        blocks = []
-        for i, down in enumerate(self.down_path):
-            x = down(x)
-            if i != len(self.down_path) - 1:
-                blocks.append(x)
-                x = F.max_pool2d(x, 2)
-
-        for i, up in enumerate(self.up_path):
-            x = up(x, blocks[-i - 1])
-
-        return self.last(x)
-
-
+        xi = [self.layers[0](x)]
+        # Down path
+        for layer in self.layers[1:self.num_layers]:
+            xi.append(layer(xi[-1]))
+        # Up path
+        for i, layer in enumerate(self.layers[self.num_layers:-1]):
+            xi[-1] = layer(xi[-1], xi[-2 - i])
+        return self.layers[-1](xi[-1])
     def training_step(self, batch, batch_nb):
         x, y = batch
 
@@ -238,8 +161,7 @@ class Unet(pl.LightningModule):
         y_hat = self.forward(x)
 
 
-        loss = F.binary_cross_entropy_with_logits(y_hat[:,0], y[:,0])
-        loss += F.binary_cross_entropy_with_logits(y_hat[:,1], y[:,1])
+        loss = F.binary_cross_entropy_with_logits(y_hat, y)
 
         tensorboard_logs = {'train_loss': loss}
         return {'loss': loss, 'log': tensorboard_logs}
@@ -249,8 +171,7 @@ class Unet(pl.LightningModule):
 
         y_hat = self.forward(x)
 
-        loss = F.binary_cross_entropy_with_logits(y_hat[:,0], y[:,0])
-        loss += F.binary_cross_entropy_with_logits(y_hat[:,1], y[:,1])
+        loss = F.binary_cross_entropy_with_logits(y_hat, y)
 
         return {'val_loss': loss}
 

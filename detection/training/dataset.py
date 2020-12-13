@@ -21,7 +21,7 @@ class DirDataset(Dataset):
         self.aug = A.Compose([
 
             A.OneOf([
-                A.RandomSizedCrop(min_max_height=(original_height//4, original_height),
+                A.RandomSizedCrop(min_max_height=(original_height//8, original_height),
                                   height=original_height, width=original_width, p=0.5),
                 A.PadIfNeeded(min_height=original_height,
                               min_width=original_width, p=0.5)
@@ -90,10 +90,6 @@ class DirDataset(Dataset):
             trans = transforms.Compose([
                 transforms.ToTensor(),
 
-                # transforms.RandomErasing(p=0.4, scale=(0.01, 0.3), ratio=(0.3, 3.3), value=(100,20,0), inplace=True),
-                # transforms.RandomErasing(p=0.4, scale=(0.01, 0.3), ratio=(0.3, 3.3), value=(13,50,0), inplace=True),
-                # transforms.RandomErasing(p=0.4, scale=(0.01, 0.3), ratio=(0.3, 3.3), value=(15,58,10), inplace=True),
-
                 transforms.Normalize([0.485, 0.456, 0.406], [
                                      0.229, 0.224, 0.225]),
             ])
@@ -136,12 +132,27 @@ class DirDataset(Dataset):
 
 
 
+        # cv2.namedWindow("mask[0]", cv2.WINDOW_NORMAL)
+        # cv2.imshow("mask[0]", mask[0])
+        # cv2.namedWindow("mask[1]", cv2.WINDOW_NORMAL)
+        # cv2.imshow("mask[1]", mask[1])
+
+        # cv2.namedWindow("img", cv2.WINDOW_NORMAL)
+        # cv2.imshow("img", img)
+        # cv2.waitKey(0)
+
         mask = torch.FloatTensor(mask)
         mask = ((mask / 255)).float()
 
         img = Image.fromarray(img.astype(np.uint8))
 
         img = self.preprocess(img)
+
+        # print("mask[0].min()",mask[0].min())
+        # print("mask[1].min()",mask[1].min())
+
+        # print("mask[0].max()",mask[0].max())
+        # print("mask[1].max()",mask[1].max())
 
         assert -10<= img.max() <= 10
         assert -10<= img.min() <= 10
