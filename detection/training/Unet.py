@@ -121,7 +121,7 @@ class Unet(pl.LightningModule):
 
         num_classes: int = 2
         num_layers: int = 4
-        features_start: int = 32
+        features_start: int = 64
         bilinear: bool = True
 
         self.hparams = hparams
@@ -182,7 +182,7 @@ class Unet(pl.LightningModule):
         return {'val_loss': avg_loss, 'log': tensorboard_logs}
 
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.parameters(), lr=16*4e-4)
+        optimizer = torch.optim.Adam(self.parameters(), lr=16*4*10*4e-4)
         # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor = 0.3, patience = 3)
         # scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer, max_lr=1.0, steps_per_epoch=40, epochs=10)
         return [optimizer]

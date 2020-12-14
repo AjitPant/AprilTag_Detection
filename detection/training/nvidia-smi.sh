@@ -36,10 +36,8 @@ echo $CUDA_VISIBLE_DEVICES
 
 #nvidia-docker build -t pytorchlightning-mod/pytorch-lightning:base-conda-py3.8-torch1.7-train .
 #docker images
-
-docker kill 60aa3587d1b1 
+docker kill e3a426b0622b
 top
-#scancel 1366
 
 docker container ls
 nvidia-smi
