@@ -123,6 +123,7 @@ class DirDataset(Dataset):
         keypoints = augmented['keypoints']
 
         mask[0].fill(0)
+        mask[1].fill(0)
 
         d = 4
 
