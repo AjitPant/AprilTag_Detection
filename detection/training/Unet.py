@@ -182,7 +182,11 @@ class Unet(pl.LightningModule):
         return {'val_loss': avg_loss, 'log': tensorboard_logs}
 
     def configure_optimizers(self):
+<<<<<<< HEAD
         optimizer = torch.optim.Adam(self.parameters(), lr=16*10*4e-4)
+=======
+        optimizer = torch.optim.Adam(self.parameters(), lr=16*4*10*4e-4)
+>>>>>>> 820c9a0f2f21e576c706800edf6b9a1c8ea9c104
         # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor = 0.3, patience = 3)
         # scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer, max_lr=1.0, steps_per_epoch=40, epochs=10)
         return [optimizer]

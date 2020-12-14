@@ -21,8 +21,10 @@ class DirDataset(Dataset):
         self.aug = A.Compose([
 
             A.OneOf([
-                A.RandomSizedCrop(min_max_height=(original_height//8, original_height),
-                                  height=original_height, width=original_width, p=0.5),
+                A.RandomSizedCrop(min_max_height=(original_height//8, original_height//2),
+                                  height=original_height, width=original_width, p=1.0),
+                A.RandomSizedCrop(min_max_height=(original_height//8, original_height//4),
+                                  height=original_height, width=original_width, p=1.0),
                 A.PadIfNeeded(min_height=original_height,
                               min_width=original_width, p=0.5)
             ], p=0.5),
@@ -79,8 +81,7 @@ class DirDataset(Dataset):
 
         except FileNotFoundError:
             self.ids = []
-        print("extracted_ ids cnt : "+str(len(self.ids)))
-
+        print("extracted_ ids cnt : "+str(len(self.ids))) 
     def __len__(self):
         return len(self.ids)
 
@@ -127,8 +128,8 @@ class DirDataset(Dataset):
 
         d = 4
 
-        for point in keypoints:
-            mask[0][max(0, int(point[1]) -d): min(img.shape[0], int(point[1])+d+1), max(0, int(point[0]) -d): min(img.shape[1], int(point[0])+d+1)] = 255
+      #  for point in keypoints:
+      #      mask[0][max(0, int(point[1]) -d): min(img.shape[0], int(point[1])+d+1), max(0, int(point[0]) -d): min(img.shape[1], int(point[0])+d+1)] = 255
 
 
 
