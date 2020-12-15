@@ -6,26 +6,17 @@ from collections import OrderedDict
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import torchvision.transforms as transforms
-from torch import optim
-from torch.utils.data import DataLoader, random_split
-from torch.utils.data.distributed import DistributedSampler
 
-import pytorch_lightning as pl
+from torch.utils.data import DataLoader, random_split
+
+from pytorch_lightning import LightningModule
 
 from dataset import DirDataset
-from torch import nn
-from torch.nn import functional as F
-import torch
 
 from torchvision import transforms, datasets, models
 
 
 import torchvision
-
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
 
 
 
@@ -101,7 +92,22 @@ class Up(nn.Module):
         x = torch.cat([x2, x1], dim=1)
         return self.conv(x)
 
-class Unet(pl.LightningModule):
+def dice_loss(input, target):
+    input = torch.sigmoid(input)
+    smooth = 1e-5
+
+    iflat = input.view(-1)
+    tflat = target.view(-1)
+    intersection = (iflat * tflat).sum()
+
+    return 1 - ((2. * intersection + smooth) /
+              (iflat.sum() + tflat.sum() + smooth))
+
+
+
+
+
+class Unet(LightningModule):
     """
     Architecture based on U-Net: Convolutional Networks for Biomedical Image Segmentation
     Link - https://arxiv.org/abs/1505.04597
@@ -120,14 +126,17 @@ class Unet(pl.LightningModule):
         super().__init__()
 
         num_classes: int = 2
-        num_layers: int = 4
-        features_start: int = 64
+        num_layers: int = 7
+        features_start: int = 16
         bilinear: bool = True
 
         self.hparams = hparams
 
+        self.loss_func = nn.BCEWithLogitsLoss(pos_weight=torch.Tensor([1.0]))
+        self.val_func = dice_loss
 
         self.num_layers = num_layers
+
 
         layers = [DoubleConv(3, features_start)]
 
@@ -161,17 +170,24 @@ class Unet(pl.LightningModule):
         y_hat = self.forward(x)
 
 
-        loss = F.binary_cross_entropy_with_logits(y_hat, y)
+        loss = self.loss_func(y_hat, y)
+        dice = self.val_func(y_hat, y)
 
-        tensorboard_logs = {'train_loss': loss}
-        return {'loss': loss, 'log': tensorboard_logs}
+
+        self.log('bce', loss, on_step=True, on_epoch=False, prog_bar=True)
+        self.log('dice', dice, on_step=True, on_epoch=False, prog_bar=True)
+
+
+        return  dice
 
     def validation_step(self, batch, batch_nb):
         x, y = batch
 
         y_hat = self.forward(x)
 
-        loss = F.binary_cross_entropy_with_logits(y_hat, y)
+        loss = self.loss_func(y_hat, y)
+
+        self.log('val_loss', loss, on_step=False, on_epoch=True, prog_bar=False)
 
         return {'val_loss': loss}
 
@@ -182,11 +198,7 @@ class Unet(pl.LightningModule):
         return {'val_loss': avg_loss, 'log': tensorboard_logs}
 
     def configure_optimizers(self):
-<<<<<<< HEAD
-        optimizer = torch.optim.Adam(self.parameters(), lr=16*10*4e-4)
-=======
-        optimizer = torch.optim.Adam(self.parameters(), lr=16*4*10*4e-4)
->>>>>>> 820c9a0f2f21e576c706800edf6b9a1c8ea9c104
+        optimizer = torch.optim.Adam(self.parameters(), lr=self.hparams.learning_rate)
         # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor = 0.3, patience = 3)
         # scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer, max_lr=1.0, steps_per_epoch=40, epochs=10)
         return [optimizer]

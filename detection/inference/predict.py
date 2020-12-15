@@ -34,6 +34,7 @@ from functools import reduce
 cv_time_wait = 0
 
 from scipy.spatial import distance as dist
+
 inf_ind = 0
 class_ind = 0
 def order_points(pts):
@@ -456,7 +457,6 @@ def main(hparams):
 
 
 
-        device = 'cuda' if torch.cuda.is_available() else 'cpu'
         print(hparams.id_net)
         net_2 = Resnet.load_from_checkpoint(hparams.id_net)
         net_2.freeze()
@@ -470,7 +470,7 @@ def main(hparams):
         img_list = [str(item) for item in glob.glob(hparams.img)]
 
         for img_str in img_list:
-            im_size = 1024*2
+            im_size = 1024
             img = Image.open(img_str).convert('RGB')
 
 

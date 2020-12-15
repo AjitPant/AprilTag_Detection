@@ -81,7 +81,7 @@ class DirDataset(Dataset):
 
         except FileNotFoundError:
             self.ids = []
-        print("extracted_ ids cnt : "+str(len(self.ids))) 
+        print("extracted_ ids cnt : "+str(len(self.ids)))
     def __len__(self):
         return len(self.ids)
 
@@ -113,8 +113,10 @@ class DirDataset(Dataset):
         img = cv2.imread(img_files[0])
         mask = [cv2.imread(mask_file, cv2.IMREAD_GRAYSCALE)
                 for mask_file in mask_files]
+
         with open(keypoints_file, "rb") as f:
             keypoints = np.array(pickle.load(f)).reshape((-1,2)).tolist()
+
         augmented = self.aug(image=img, mask0=mask[0], mask1=mask[1], keypoints = keypoints)
         img = augmented['image']
 
@@ -124,12 +126,12 @@ class DirDataset(Dataset):
         keypoints = augmented['keypoints']
 
         mask[0].fill(0)
-        mask[1].fill(0)
 
-        d = 4
+        d = 2
 
-      #  for point in keypoints:
-      #      mask[0][max(0, int(point[1]) -d): min(img.shape[0], int(point[1])+d+1), max(0, int(point[0]) -d): min(img.shape[1], int(point[0])+d+1)] = 255
+        for point in keypoints:
+           mask[0][max(0, int(point[1]) -d): min(img.shape[0], int(point[1])+d+1), max(0, int(point[0]) -d): min(img.shape[1], int(point[0])+d+1)] = 255
+
 
 
 
@@ -150,11 +152,7 @@ class DirDataset(Dataset):
 
         img = self.preprocess(img)
 
-        # print("mask[0].min()",mask[0].min())
-        # print("mask[1].min()",mask[1].min())
 
-        # print("mask[0].max()",mask[0].max())
-        # print("mask[1].max()",mask[1].max())
 
         assert -10<= img.max() <= 10
         assert -10<= img.min() <= 10

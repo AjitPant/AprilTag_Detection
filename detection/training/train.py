@@ -25,7 +25,7 @@ def main(hparams):
     assert hparams.checkpoint is None or  os.path.exists(hparams.checkpoint)
 
     checkpoint_callback = ModelCheckpoint(
-        monitor = 'loss',
+        monitor ='val_loss' ,
         filepath=os.path.join(log_dir, 'checkpoints'),
         save_top_k=-1,
         verbose=True,
@@ -42,11 +42,11 @@ def main(hparams):
     trainer = Trainer(
         num_nodes=1,
         max_epochs = 10,
-        accelerator='ddp',
+        accelerator=hparams.accelerator,
         gpus=hparams.n_gpu,
         checkpoint_callback=checkpoint_callback,
         resume_from_checkpoint=hparams.checkpoint,
-#        benchmark=True,
+       benchmark=True,
     )
 
 
@@ -59,9 +59,11 @@ if __name__ == '__main__':
     parent_parser = ArgumentParser(add_help=False)
     parent_parser.add_argument('--dataset', required=True)
     parent_parser.add_argument('--n_gpu', default = 1, type = int)
+    parent_parser.add_argument('--accelerator', default = 'ddp')
     parent_parser.add_argument('--log_dir', default='/raid/apant_ma/AprilTag-Detection/AprilTag_Detection/detection/training/lightning_logs')
     parent_parser.add_argument('--checkpoint', default=None)
     parent_parser.add_argument('--batch_size', type=int, default=1)
+    parent_parser.add_argument('--learning_rate', type=float, default=4e-4)
     parser = Unet.add_model_specific_args(parent_parser)
     hparams = parser.parse_args()
 
