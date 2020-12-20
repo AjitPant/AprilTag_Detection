@@ -1,11 +1,12 @@
 import os, glob, cv2
-import random
 import pickle
-from tqdm import tqdm
+
 from PIL import Image
-import numpy as np, torch
+import numpy as np
+
+import torch
 from torch.utils.data import Dataset
-from torchvision import transforms, datasets, models
+from torchvision import transforms
 import albumentations as A
 
 class DirDataset(Dataset):

@@ -1,7 +1,4 @@
-import os
-import logging
 from argparse import ArgumentParser
-from collections import OrderedDict
 
 import torch
 import torch.nn as nn
@@ -13,10 +10,8 @@ from pytorch_lightning import LightningModule
 
 from dataset import DirDataset
 
-from torchvision import transforms, datasets, models
 
 
-import torchvision
 
 
 
@@ -199,8 +194,6 @@ class Unet(LightningModule):
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=self.hparams.learning_rate)
-        # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor = 0.3, patience = 3)
-        # scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer, max_lr=1.0, steps_per_epoch=40, epochs=10)
         return [optimizer]
 
     def __dataloader(self):

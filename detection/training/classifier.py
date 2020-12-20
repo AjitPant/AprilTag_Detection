@@ -1,28 +1,20 @@
-import os
-import logging
+
 from argparse import ArgumentParser
-from collections import OrderedDict
 
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
-import torchvision.transforms as transforms
-from torch import optim
+
+from torch import nn, optim
+
 from torch.utils.data import DataLoader, random_split
-from torch.utils.data.distributed import DistributedSampler
 
 import pytorch_lightning as pl
 
 from dataset_classifier import DirDataset
-from torch import nn
-from torch.nn import functional as F
-import torch
 
-from torchvision import transforms, datasets, models
+from torchvision.models import resnet
 
-
-import torchvision
-resnet = torchvision.models.resnet.resnet50(pretrained=True)
+resnet = resnet.resnet50(pretrained=True)
 
 class Resnet(pl.LightningModule):
     def __init__(self, hparams):

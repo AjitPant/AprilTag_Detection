@@ -497,7 +497,6 @@ def main(hparams):
 
             img = np.array(img)
 
-            # mask = mask.astype(np.uint8)
             _mask = _mask.astype(np.uint8)
 
             reduce_to_tags(net_2, net_id,img, _mask, mask, img_str, hparams)

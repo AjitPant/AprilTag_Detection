@@ -20,7 +20,7 @@ class AprilTagImages(object):
         self.size = size
         self.family = family
         # Path to mosaic image of April Tag images.
-        self.path = os.path.join(root, os.path.join(family, 'mosaic.png'))
+        self.path = os.path.join(root,'tag_data', family, 'mosaic.png')
         self.images, self.bytecodes = self.extract_images()
 
     def __len__(self):

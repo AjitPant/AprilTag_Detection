@@ -34,10 +34,6 @@ class backgroundOverlayer(object):
 
         for tag in range(tags_to_overlay):
             index = random.randrange(len(self.generator))
-            # index= random.choice([27,28, 29,30,31,32, 33, 34, 35,36, 37, 38, 38, 39, 40,41, 42, 43, 44])
-            # index = random.randrange(500)
-
-            # index = 27
 
             result = self.generator[index]
 
@@ -89,12 +85,8 @@ class backgroundOverlayer(object):
                 light_background = background_img_view_lab[:, :,0].mean()
                 light_tag = tag_img_view_lab[:,:,0].sum()/ np.count_nonzero(mask)
 
-                # kernel = np.ones((5,5),np.float32)/25
-                # light_tag = cv2.filter2D(light_tag,-1,kernel)
 
                 w_light =  (( light_background/(light_tag + 0.0001)))
-                # w_light = np.ones((height, width), dtype = np.float32)*w_light
-                # w_light =  (w_light +np.random.normal(0, 0.1, w_light.shape))
                 tag_img_view_lab[:, :, 0] = np.clip(np.multiply(tag_img_view_lab[:,:,0]  ,w_light), 0, 255);
 
                 if np.random.uniform(0, 1, 1)[0] > 1.7:
@@ -135,22 +127,6 @@ class backgroundOverlayer(object):
 
                 corners_collection.append([np.array([x_offset, y_offset])+corners_coords ])
                 bytecode_collection.append(bytecode)
-
-
-        if np.random.uniform(0, 1, 1)[0] > 1.8:
-            background_img[:,:,0] = cv2.equalizeHist(background_img[:,:,0]);
-            background_img[:,:,1] = cv2.equalizeHist(background_img[:,:,1]);
-            background_img[:,:,2] = cv2.equalizeHist(background_img[:,:,2]);
-
-        if np.random.uniform(0, 1, 1)[0] > 1.5:
-            background_img = add_shadow(background_img, random.randrange(2))
-
-        if np.random.uniform(0, 1, 1)[0] > 1.5:
-            background_img = add_spot_light(background_img)
-
-
-        if np.random.uniform(0, 1, 1)[0] > 1.5:
-            background_img = add_parallel_light(background_img)
 
 
         if np.random.uniform(0, 1, 1)[0] > 1.5:

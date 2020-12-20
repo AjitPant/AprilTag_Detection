@@ -1,5 +1,4 @@
 import os
-#######################import shutil
 from argparse import ArgumentParser
 
 import numpy as np
@@ -13,7 +12,6 @@ from pytorch_lightning.profiler import AdvancedProfiler
 
 
 def main(hparams):
-###############3i####    shutil.rmtree('/raid/apant_ma/AprilTag-Detection/AprilTag_Detection/detection/training/lightning_logs')
     print(hparams.dataset)
     model = Unet(hparams)
 

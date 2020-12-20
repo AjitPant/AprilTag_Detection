@@ -25,7 +25,6 @@ def main(hparams):
         log_dir = os.path.join(hparams.log_dir, 'version_0')
 
     checkpoint_callback = ModelCheckpoint(
-        # monitor = 'loss',
         filepath=os.path.join(log_dir, 'checkpoints_older'),
         save_top_k=-1,
         verbose=True,
