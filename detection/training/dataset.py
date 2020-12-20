@@ -26,8 +26,12 @@ class DirDataset(Dataset):
                                   height=original_height, width=original_width, p=1.0),
                 A.RandomSizedCrop(min_max_height=(original_height//8, original_height//4),
                                   height=original_height, width=original_width, p=1.0),
-                A.PadIfNeeded(min_height=original_height,
-                              min_width=original_width, p=0.5)
+                A.RandomSizedCrop(min_max_height=(original_height//2, original_height//1),
+                                  height=original_height, width=original_width, p=1.0),
+                A.RandomSizedCrop(min_max_height=(original_height//4, original_height//1),
+                                  height=original_height, width=original_width, p=1.0),
+                A.RandomSizedCrop(min_max_height=(original_height//1.5, original_height//1),
+                                  height=original_height, width=original_width, p=1.0),
             ], p=0.5),
             A.OneOf([
                 A.Blur((5,11), p = 0.5),
@@ -36,8 +40,6 @@ class DirDataset(Dataset):
 
             A.OneOf([
                 A.ToGray(),
-                # A.CoarseDropout(max_height=40, min_height=2,
-                #                 max_width=40, min_width=2, min_holes=1, max_holes=20,fill_value=(255,0,255)),
                 A.ChannelDropout(),
             ], p=0.5),
 
@@ -54,7 +56,6 @@ class DirDataset(Dataset):
             A.CLAHE(p=0.3),
             A.GaussNoise(),
             A.OneOf([
-                # A.RandomSnow(p=1.0),
                 A.RandomRain(),
                 A.RandomFog( fog_coef_lower = 0.1, fog_coef_upper = 0.3),
             ], p=0.5),
