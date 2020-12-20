@@ -3,13 +3,13 @@
 # Job name 
 #SBATCH --ntasks=1
 # Run on a single CPU 
-#SBATCH --time=02:00:00
+#SBATCH --time=01:20:00
 # Time limit hrs:min:sec
 #SBATCH --output=tf_test_%j.out
 # Standard output and error log
 #SBATCH --cpus-per-task=16
 #SBATCH --gres=gpu:0
-#SBATCH --mem=128GB
+#SBATCH --mem=64GB
 echo $CUDA_VISIBLE_DEVICES
 echo "SLURM_JOBID="$SLURM_JOBID
 echo "SLURM_JOB_NODELIST"=$SLURM_JOB_NODELIST

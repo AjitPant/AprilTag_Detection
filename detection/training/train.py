@@ -41,7 +41,7 @@ def main(hparams):
 
     trainer = Trainer(
         num_nodes=1,
-        max_epochs = 10,
+        max_epochs = 90,
         accelerator=hparams.accelerator,
         gpus=hparams.n_gpu,
         checkpoint_callback=checkpoint_callback,
@@ -63,7 +63,7 @@ if __name__ == '__main__':
     parent_parser.add_argument('--log_dir', default='/raid/apant_ma/AprilTag-Detection/AprilTag_Detection/detection/training/lightning_logs')
     parent_parser.add_argument('--checkpoint', default=None)
     parent_parser.add_argument('--batch_size', type=int, default=1)
-    parent_parser.add_argument('--learning_rate', type=float, default=4e-4)
+    parent_parser.add_argument('--learning_rate', type=float, default=16*4e-4)
     parser = Unet.add_model_specific_args(parent_parser)
     hparams = parser.parse_args()
 

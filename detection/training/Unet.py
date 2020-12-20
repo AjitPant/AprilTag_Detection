@@ -96,8 +96,8 @@ def dice_loss(input, target):
     input = torch.sigmoid(input)
     smooth = 1e-5
 
-    iflat = input.view(-1)
-    tflat = target.view(-1)
+    iflat = input.reshape(-1)
+    tflat = target.reshape(-1)
     intersection = (iflat * tflat).sum()
 
     return 1 - ((2. * intersection + smooth) /
@@ -171,7 +171,7 @@ class Unet(LightningModule):
 
 
         loss = self.loss_func(y_hat, y)
-        dice = self.val_func(y_hat, y)
+        dice = self.val_func(y_hat[:,0], y[:,0]) + self.val_func(y_hat[:,1], y[:,1]) + self.loss_func(y_hat, y)
 
 
         self.log('bce', loss, on_step=True, on_epoch=False, prog_bar=True)

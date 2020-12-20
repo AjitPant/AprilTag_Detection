@@ -35,9 +35,13 @@ echo $CUDA_VISIBLE_DEVICES
 #docker system prune  -f
 
 #nvidia-docker build -t pytorchlightning-mod/pytorch-lightning:base-conda-py3.8-torch1.7-train .
-#docker images
-docker kill e3a426b0622b
-top
+###docker images
+
+docker container ls
+nvidia-smi
+#docker stats
+#top
+NV_GPU=0,1,2,3 nvidia-docker run --rm  --ipc=host -t ${USER_TTY} --name $SLURM_JOB_ID -v /raid//:/raid pytorchlightning-mod/pytorch-lightning:base-conda-py3.8-torch1.7-train cp /raid/ram03fma/kb/mmdetection/tools/slurm_train.sh /raid/apant_ma/dmp
 
 docker container ls
 nvidia-smi

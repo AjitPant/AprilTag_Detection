@@ -186,12 +186,12 @@ def app():
     parser.add_argument(
         '--out_folder',
         type=str,
-        default='/raid/apant_ma/AprilTag-Detection/AprilTag_Detection/DatasetGeneration/./out3',
+        default='/raid/apant_ma/AprilTag-Detection/AprilTag_Detection/DatasetGeneration/./out7',
         help='Output folder which contains dataset')
     parser.add_argument(
         '--family',
         type=str,
-        default=TAG36h11,
+        default=TAG41h12,
         help='April tag family.')
     parser.add_argument(
         '--size',
