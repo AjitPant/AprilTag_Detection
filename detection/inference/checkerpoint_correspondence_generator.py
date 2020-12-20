@@ -17,10 +17,11 @@ def parallization_function(args, i, filename, global_objpts, global_imgpts, glob
 
     # prepare object points, like (0,0,0), (1,0,0), (2,0,0) ....,(6,5,0)
     objpts = np.zeros((ncols * nrows, 3), np.float32)
-    objpts[:, :2] = np.mgrid[0:ncols, 0:nrows].T.reshape(-1, 2)*10
+    objpts[:, :2] = np.mgrid[0:ncols, 0:nrows].T.reshape(-1, 2)*2.29
 
     print("{0}) Reading {1}".format(i + 1, filename))
     image = cv2.imread(filename)
+    image = cv2.resize(image, (2048, 2048))
 
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     height, width = gray.shape
@@ -54,7 +55,7 @@ def process(args):
     # Arrays to store object points and image points from all the images.
     objpts_list = list()  # 3d point in real world space
     imgpts_list = list()  # 2d points in image plane.
-    images = glob.glob(os.path.join(args.images_dir, "*.jpg"))
+    images = glob.glob(os.path.join(args.images_dir, "*.bmp"))
 
 
     with Manager() as manager:
@@ -88,7 +89,8 @@ def process(args):
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
     if args.output_dir is not None:
-        with open(os.path.join(args.output_dir, "data_rotation_fixed_vert_temp.pkl"), "wb") as f:
+        os.makedirs(args.output_dir, exist_ok=True)
+        with open(os.path.join(args.output_dir, "chessboard_bmp.pkl"), "wb") as f:
             data = (objpts_list, imgpts_list, gray.shape)
             pickle.dump(data, f)
 

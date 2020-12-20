@@ -28,12 +28,20 @@ class Resnet(pl.LightningModule):
     def __init__(self, hparams):
         super(Resnet, self).__init__()
         self.hparams = hparams
-        self.model_ft = models.resnet18(pretrained=True)
-        self.num_ftrs = self.model_ft.fc.in_features
-        self.model_ft.fc = nn.Linear(self.num_ftrs, 4)
+        self.model_ft = nn.Sequential(
+                        nn.Linear(3*224*224, 2*224),
+                        nn.ReLU(),
+                        nn.Linear(2*224, 2*224),
+                        nn.ReLU(),
+                        nn.Linear(2*224, 224),
+                        nn.ReLU(),
+                        nn.Linear(224, 140),
+                        nn.ReLU(),
+                        nn.Linear(140, 100)
+        )
 
     def forward(self, input):
-        return self.model_ft(input)
+        return self.model_ft(input.reshape(-1,3*224*224))
 
     def training_step(self, batch, batch_nb):
         x, y = batch
@@ -41,7 +49,7 @@ class Resnet(pl.LightningModule):
 
         y_hat = self.forward(x)
         y=y.squeeze(1)
-        loss = F.cross_entropy(y_hat, y.long())
+        loss = F.binary_cross_entropy_with_logits(y_hat, y)
 
         return {'loss': loss}
 
@@ -50,7 +58,7 @@ class Resnet(pl.LightningModule):
 
         y_hat = self.forward(x)
         y=y.squeeze(1)
-        loss = F.cross_entropy(y_hat, y.long())
+        loss = F.binary_cross_entropy_with_logits(y_hat, y)
 
 
         return {'val_loss': loss}
@@ -62,12 +70,11 @@ class Resnet(pl.LightningModule):
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=3e-4)
-        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor = 0.3, patience = 3)
-        return [optimizer] , [scheduler]
+        return [optimizer]
 
     def __dataloader(self):
         dataset = self.hparams.dataset
-        dataset = DirDataset(f'./dataset/{dataset}/simg')
+        dataset = DirDataset(f'{dataset}/ssimg', f'{dataset}/simg')
 
         n_val = int(len(dataset) * 0.1)
         n_train = len(dataset) - n_val

@@ -96,7 +96,8 @@ def reduce_to_tags(net, net_id, img, response_1, response_2, filename, hparams):
 
     markerCorners, markerIds, rejectedCandidates = cv2.aruco.detectMarkers(img, dictionary, parameters=parameters)
 
-    class_ind+=markerIds.shape[0]
+    if markerIds is not None:
+        class_ind+=markerIds.shape[0]
 
 
     img_make_clone = img.copy()
@@ -155,8 +156,8 @@ def reduce_to_tags(net, net_id, img, response_1, response_2, filename, hparams):
                 mask_real_corners.shape, dtype=np.uint8)
             cv2.drawContours(internal_internal_mask,
                              internal_contours, inner_ind, 255, -1)
-            # internal_internal_mask = cv2.bitwise_and(
-            #     internal_internal_mask, mask_real_corners.astype(np.uint8))
+            internal_internal_mask = cv2.bitwise_and(
+                internal_internal_mask, mask_real_corners.astype(np.uint8))
 
             # cv2.namedWindow('internal_internal_mask', cv2.WINDOW_NORMAL)
             # cv2.imshow("internal_internal_mask", internal_internal_mask)
@@ -244,7 +245,7 @@ def reduce_to_tags(net, net_id, img, response_1, response_2, filename, hparams):
         # print(corner_list)
 
 
-        pad = 30
+        pad = 40
         tag_size = 224
         h, status = cv2.findHomography(
             np.array(corner_list), np.array([[pad, pad], [pad, tag_size-pad],[tag_size-pad, tag_size-pad],  [tag_size-pad, 0+pad]]))
@@ -254,9 +255,6 @@ def reduce_to_tags(net, net_id, img, response_1, response_2, filename, hparams):
 
         im1Reg = cv2.warpPerspective(img, h, (tag_size, tag_size))
 
-        # # cv2.namedWindow('unrotated_tag', cv2.WINDOW_NORMAL)
-        # # cv2.imshow('unrotated_tag', im1Reg)
-        # # cv2.waitKey(cv_time_wait)
 
         # # im1Reg = cv2.cvtColor(im1Reg, cv2.COLOR_BGR2GRAY)
         # # blur = cv2.GaussianBlur(im1Reg,(5,5),0)
@@ -272,8 +270,19 @@ def reduce_to_tags(net, net_id, img, response_1, response_2, filename, hparams):
 
         ds = dataset_classifier.DirDataset('', '')
         im2Reg = (ds.preprocess(im2Reg))
+
+
+
         out = net(im2Reg.unsqueeze(0).to(device))
-        rotation = ((np.argmax(out.squeeze(0).cpu())+2)*-90).item()
+
+
+        print(torch.round(nn.Sigmoid()(out)).reshape(10,10))
+
+        cv2.namedWindow('unrotated_tag', cv2.WINDOW_NORMAL)
+        cv2.imshow('unrotated_tag', im1Reg)
+        cv2.waitKey(cv_time_wait)
+
+        rotation = 0
 
         (h, w) = im1Reg.shape[:2]
 
@@ -295,11 +304,11 @@ def reduce_to_tags(net, net_id, img, response_1, response_2, filename, hparams):
         out = net_id(im31Reg.unsqueeze(0).to(device))
 
         glb_id = ((np.argmax(out.squeeze(0).cpu()))).item()
-        if(torch.softmax(out,dim = 1)[0][glb_id]<0.5):
-            continue;
+        # if(torch.softmax(out,dim = 1)[0][glb_id]<0.5):
+        #     continue;
 
-        if( glb_id == 587):
-            continue
+        # if( glb_id == 587):
+        #     continue
         inf_ind+=1
         print(inf_ind)
         with open("./data_out/file_n.txt", "a") as diff_file:
@@ -393,7 +402,7 @@ def reduce_to_tags(net, net_id, img, response_1, response_2, filename, hparams):
 
 
 
-def predict(net, img, device='cuda', threshold=0.5, kernel =1024, stride =512):
+def predict(net, img, device='cuda', threshold=0.5, kernel =1024, stride =768):
     with torch.no_grad():
         ds = DirDataset('', '')
         _img = (ds.preprocess(img))
@@ -457,8 +466,8 @@ def main(hparams):
 
 
 
-        print(hparams.id_net)
-        net_2 = Resnet.load_from_checkpoint(hparams.id_net)
+        print(hparams.checkpoint_bit)
+        net_2 = Resnet.load_from_checkpoint(hparams.checkpoint_bit)
         net_2.freeze()
         net_2.to(device)
         net_2.eval()
@@ -480,7 +489,7 @@ def main(hparams):
             width, height = img.size
             open_cv_image = np.array(img)
             # Convert RGB to BGR
-            open_cv_image = open_cv_image[:, :, ::-1].copy()
+            # open_cv_image = open_cv_image[:, :, ::-1].copy()
 
             img = Image.fromarray(open_cv_image)
 
@@ -501,6 +510,7 @@ if __name__ == '__main__':
     print("hi")
     parent_parser = ArgumentParser(add_help = False)
     parent_parser.add_argument('--checkpoint', required=True, help = "Network for segmentation")
+    parent_parser.add_argument('--checkpoint_bit', required=True, help = "Network for segmentation")
     parent_parser.add_argument('--id_net', required=True, help = "Network for corner classification")
     parent_parser.add_argument('--id_classifier_net', required=True, help = "Network for tag classification")
     # parent_parser.add_argument('--fit_out_net', required=True, help = "Network for tag classification")

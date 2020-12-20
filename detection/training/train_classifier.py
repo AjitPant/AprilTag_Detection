@@ -6,7 +6,7 @@ import torch
 
 from classifier import Resnet
 from pytorch_lightning import Trainer
-from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping, LearningRateLogger
+from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 from pytorch_lightning.profiler import AdvancedProfiler
 
 
@@ -27,7 +27,7 @@ def main(hparams):
     checkpoint_callback = ModelCheckpoint(
         # monitor = 'loss',
         filepath=os.path.join(log_dir, 'checkpoints_older'),
-        save_top_k=1,
+        save_top_k=-1,
         verbose=True,
     )
     stop_callback = EarlyStopping(
@@ -38,22 +38,14 @@ def main(hparams):
 
     )
 
-    lr_logger = LearningRateLogger()
 
     trainer = Trainer(
         gpus=1,
         checkpoint_callback=checkpoint_callback,
-        early_stop_callback=stop_callback,
-        callbacks= [lr_logger],
         accumulate_grad_batches=1,
-        # resume_from_checkpoint=hparams.checkpoint,
+        resume_from_checkpoint=hparams.checkpoint,
         benchmark=True,
-        # overfit_batches=10,
-        # val_check_interval=0.250,
-        # auto_scale_batch_size='binsearch',
-        #gradient_clip_val=100,
-        #amp_level='O2',
-        #precision=16,
+
     )
 
 

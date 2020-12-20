@@ -29,7 +29,7 @@ def process_image(L,params, i):
 if __name__ == '__main__':
 
     with Manager() as manager:
-        with open('outputs/data_rotation_fixed_vert_temp.pkl', 'rb') as f:
+        with open('outputs/chessboard_bmp.pkl', 'rb') as f:
             params = pickle.load(f)
 
         objpoints, imgpoints, gray_shape = params

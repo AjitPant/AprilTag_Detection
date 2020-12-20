@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 import os
+import copy
 
 TAG36h11 = 'tag36h11'
 TAG41h12 = 'tag41h12'
@@ -20,7 +21,7 @@ class AprilTagImages(object):
         self.family = family
         # Path to mosaic image of April Tag images.
         self.path = os.path.join(root, os.path.join(family, 'mosaic.png'))
-        self.images = self.extract_images()
+        self.images, self.bytecodes = self.extract_images()
 
     def __len__(self):
         """
@@ -48,6 +49,7 @@ class AprilTagImages(object):
             assert False, 'Unknown April tag family!' + self.family
 
         images = list()
+        bytecodes = list()
         for i in range(nsquares_y):
             for j in range(nsquares_x):
                 row = i * (step + 1)
@@ -55,12 +57,13 @@ class AprilTagImages(object):
                 image = mosaic_image[row:row + step, col:col + step]
                 if np.sum(image) == 0:
                     break
+                bytecodes.append(copy.deepcopy(image))
                 scaled_image = cv2.resize(
                     image,
                     dsize=(self.size, self.size),
                     interpolation=cv2.INTER_NEAREST)
                 images.append(scaled_image)
-        return images
+        return images, bytecodes
 
     def corners(self):
 
@@ -80,4 +83,4 @@ class AprilTagImages(object):
 
     def image(self, idx):
                     assert idx < len(self.images), 'Not a valid index.'
-                    return self.images[idx]
+                    return self.images[idx], self.bytecodes[idx]

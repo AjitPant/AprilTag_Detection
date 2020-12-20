@@ -40,94 +40,22 @@ mutex = Lock()
 
 
 cnt = [0,0,0,0]
-def reduce_to_tags(img, response_1, response_2,response_id, filename, args):
-    mask_segmentation = response_1
-    mask_corners = response_2
-    segregates = []
-    mask_corners =  np.argmax(mask_corners, axis=2)
+def reduce_to_tags(img,  corners_collection, bytecode_collection, filename, args):
 
-    mask_real_corners = np.zeros(mask_corners.shape[1:], dtype=np.uint8)
-
-    mask_real_corners = (mask_corners!=4).astype(np.uint8)
-
-    contours, _ = cv2.findContours(
-        mask_segmentation, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
-
-    temp_img = img.copy()
-    coords = np.argwhere(mask_corners > 0)
-
-    cv2.drawContours(temp_img, contours, -1, (0, 255, 0), 3)
-
-    index = 0
-
-    for ind in range(len(contours)):
-        segregates = []
-        internal_mask = np.zeros(mask_real_corners.shape, dtype=np.uint8)
-
-        cv2.drawContours(internal_mask, contours, ind, 255, -1)
-
-        internal_mask = cv2.bitwise_and(
-            internal_mask, mask_real_corners.astype(np.uint8))
-
-        internal_contours, _ = cv2.findContours(
-            internal_mask, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
-
-        for inner_ind in range(len(internal_contours)):
-            internal_internal_mask = np.zeros(
-                mask_real_corners.shape, dtype=np.uint8)
-            cv2.drawContours(internal_internal_mask,
-                             internal_contours, inner_ind, 255, -1)
-            internal_internal_mask = cv2.bitwise_and(
-                internal_internal_mask, mask_real_corners.astype(np.uint8))
-
-            mode = map(nonzero_mode, internal_internal_mask)
-            #find the center of contours
-            M = cv2.moments(internal_contours[inner_ind])
-            cX = int(M["m10"] / (M["m00"]+1e-9))
-            cY = int(M["m01"] / (M["m00"]+1e-9))
-            segregates.append([cX, cY])
-
-        if len(segregates) != 4:
-            continue
-        segregates = order_points(segregates)
-
-        if len(segregates) != 4:
-            continue
+    for j,(corners, code) in enumerate(zip(corners_collection, bytecode_collection)):
+            h, status = cv2.findHomography(
+                np.array(corners), np.array([[0, 0], [0, 224], [224, 224], [224, 0]]))
+            height, width, channels = img.shape
+            im1Reg = cv2.warpPerspective(img, h, (224, 224))
 
 
+            cv2.imwrite(os.path.join(args.out_folder, 'ssimg',
+                                     filename[:-4] + "_" + str(j) + '.jpg'), im1Reg)
 
-        corner_list = []
-
-        for i in segregates:
-            corner_list.append((i[0], i[1]))
-
-        assert len(corner_list) == 4
-        # print(corner_list)
-        rand1= random.randrange(25,35)
-        rand2 = random.randrange(25,35)
-        rand3 = random.randrange(25,35)
-        rand4 = random.randrange(25,35)
-        rand5 = random.randrange(25,35)
-        rand6 = random.randrange(25,35)
-        rand7 = random.randrange(25,35)
-        rand8 = random.randrange(25,35)
-
-        h, status = cv2.findHomography(
-            np.array(corner_list), np.array([[0+rand1, 0+rand2], [0+rand3, 224-rand4], [224-rand5, 224-rand6], [224-rand7, 0+rand8]]))
-        height, width, channels = img.shape
-        im1Reg = cv2.warpPerspective(img, h, (224, 224))
-
-
-        label = response_id[int(corner_list[0][1]), int(corner_list[0][0]), 0]
-
-        cv2.imwrite(os.path.join(args.out_folder, 'ssimg',
-                                 filename[:-4] + "_" + str(index) + '.jpg'), im1Reg)
-
-        with open(os.path.join(args.out_folder, 'ssimg',filename[:-4] + "_" + str(index) + '.txt'), "w") as text_file:
-            print(f"{label}", file=text_file)
-
-        index = index + 1
-
+            code = code.reshape(-1)/255
+            with open(os.path.join(args.out_folder, 'simg',
+                                     filename[:-4] + "_" + str(j) + '.pkl'), "wb") as f:
+                pickle.dump(code, f)
 
 
 
@@ -146,13 +74,17 @@ def augment_and_save(file, overlayer, args):
                 exit()
 
             img = cv2.resize(img, (512*4, 512*4))
-            img_out, response_1, response_2, response_3 ,response_id, corners_collection = overlayer(img)
+            img_out, response_1, response_2, response_3 ,response_id, corners_collection,bytecode_collection = overlayer(img)
 
             img_out = cv2.resize(img_out, (1024, 1024), interpolation = cv2.INTER_AREA)
             response_1 = cv2.resize(response_1, (1024, 1024), interpolation = cv2.INTER_AREA)
             response_2 = cv2.resize(response_2, (1024, 1024), interpolation = cv2.INTER_AREA)
 
+
+
             corners_collection = [ [x/2 for x in y ]  for y in corners_collection]
+
+            reduce_to_tags(img_out, corners_collection,bytecode_collection, filename, args)
 
             cv2.imwrite(os.path.join(args.out_folder, 'img',
                                      filename[:-4] + "_" + str(j) + '.jpg'), img_out)
@@ -225,9 +157,9 @@ def app():
     directory = os.fsencode(args.img_folder)
     i = 0
 
-    n_processors = 16
+    n_processors = 8
 
-    mx_files = 4000
+    mx_files = 1000
 
     file_list = sorted(list(os.listdir(directory))[2*mx_files:3*mx_files])
 

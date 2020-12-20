@@ -15,7 +15,6 @@ def process_image(L,params, i):
     ret, mtx, dist, rvecs, tvecs, stdDeviationsIntrinsics, stdDeviationsExtrinsics, perViewErrors = cv.calibrateCameraExtended(objPoints, corners,  gray_shape, None, None)
 
     L[i] = [ret, mtx, dist, rvecs, tvecs, perViewErrors]
-    print(perViewErrors)
 
 
 
