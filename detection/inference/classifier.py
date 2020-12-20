@@ -1,3 +1,5 @@
+
+
 import os
 import logging
 from argparse import ArgumentParser
@@ -28,20 +30,28 @@ class Resnet(pl.LightningModule):
     def __init__(self, hparams):
         super(Resnet, self).__init__()
         self.hparams = hparams
-        self.model_ft = models.resnet18(pretrained=True)
-        self.num_ftrs = self.model_ft.fc.in_features
-        self.model_ft.fc = nn.Linear(self.num_ftrs, 4)
+        self.model_ft = nn.Sequential(
+                        nn.Linear(3*224*224, 2*224),
+                        nn.ReLU(),
+                        nn.Linear(2*224, 2*224),
+                        nn.ReLU(),
+                        nn.Linear(2*224, 224),
+                        nn.ReLU(),
+                        nn.Linear(224, 140),
+                        nn.ReLU(),
+                        nn.Linear(140, 100),
+        )
 
     def forward(self, input):
-        return self.model_ft(input)
+        return self.model_ft(input.reshape(-1,3*224*224))
 
     def training_step(self, batch, batch_nb):
         x, y = batch
 
 
         y_hat = self.forward(x)
-        y=y.squeeze(0)
-        loss = F.cross_entropy(y_hat, y.long())
+        y=y.squeeze(1)
+        loss = F.binary_cross_entropy_with_logits(y_hat, y)
 
         return {'loss': loss}
 
@@ -49,8 +59,8 @@ class Resnet(pl.LightningModule):
         x, y = batch
 
         y_hat = self.forward(x)
-        y=y.squeeze(0)
-        loss = F.cross_entropy(y_hat, y.long())
+        y=y.squeeze(1)
+        loss = F.binary_cross_entropy_with_logits(y_hat, y)
 
 
         return {'val_loss': loss}
@@ -61,20 +71,19 @@ class Resnet(pl.LightningModule):
         return {'val_loss': avg_loss, 'log': tensorboard_logs}
 
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.parameters(), lr=3e-3)
-        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor = 0.3, patience = 3)
-        return [optimizer] , [scheduler]
+        optimizer = torch.optim.Adam(self.parameters(), lr=3e-4)
+        return [optimizer]
 
     def __dataloader(self):
         dataset = self.hparams.dataset
-        dataset = DirDataset(f'./dataset/{dataset}/simg')
+        dataset = DirDataset(f'{dataset}/ssimg', f'{dataset}/simg')
 
         n_val = int(len(dataset) * 0.1)
         n_train = len(dataset) - n_val
 
         train_ds, val_ds = random_split(dataset, [n_train, n_val], generator=torch.Generator().manual_seed(347))
-        train_loader = DataLoader(train_ds, batch_size=1,num_workers=4, pin_memory=True, shuffle=True)
-        val_loader = DataLoader(val_ds, batch_size=1,num_workers=4, pin_memory=True, shuffle=False)
+        train_loader = DataLoader(train_ds, batch_size=16,num_workers=8, pin_memory=True, shuffle=True)
+        val_loader = DataLoader(val_ds, batch_size=16,num_workers=8, pin_memory=True, shuffle=False)
 
         return {
             'train': train_loader,

@@ -17,7 +17,7 @@ class AprilTagFormatter(object):
 
         boardsIdsMapping = dict(zip(boardIds, boardPoints))
 
-        objPoints = [np.array([boardsIdsMapping[ 350 + 374 - id.item()]  for id in single_board_ids if id.item() in boardsIdsMapping.keys()], dtype =np.float32).reshape(-1, 3) for single_board_ids in ids if len(single_board_ids)]
+        objPoints = [np.array([boardsIdsMapping[ 300 + 324 - id.item()]  for id in single_board_ids if id.item() in boardsIdsMapping.keys()], dtype =np.float32).reshape(-1, 3) for single_board_ids in ids if len(single_board_ids)]
 
         return objPoints
 

@@ -25,7 +25,7 @@ def process(args):
 
     dictionary = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_APRILTAG_36h11)
 
-    board = cv2.aruco.GridBoard_create(5, 5, markerLength, markerSeparation, dictionary, firstMarker = 350)
+    board = cv2.aruco.GridBoard_create(5, 5, markerLength, markerSeparation, dictionary, firstMarker = 300)
 
     # img = board.draw((500 , 500))
     # cv2.imshow('img', img)

@@ -1,5 +1,6 @@
 import os, glob, cv2
 import random
+import pickle
 from tqdm import tqdm
 from PIL import Image
 import numpy as np, torch
@@ -8,8 +9,9 @@ from torchvision import transforms, datasets, models
 
 class DirDataset(Dataset):
 
-    def __init__(self, img_dir, scale=1):
+    def __init__(self, img_dir, label_dir ,scale=1):
         self.img_dir = img_dir
+        self.label_dir = label_dir
         self.scale = scale
         print(self.img_dir)
         try:
@@ -40,41 +42,20 @@ class DirDataset(Dataset):
 
     def __getitem__(self, i):
         idx = self.ids[i ]
-        img_files = [os.path.join(self.img_dir, idx + '.jpg')]
-        label_files = [os.path.join(self.img_dir, idx + '.txt')]
+        img_files = os.path.join(self.img_dir, idx + '.jpg')
+        label_files = os.path.join(self.label_dir, idx + '.pkl')
 
 
-        # assert len(img_files) == 1, f"{idx}: {img_files}"
-        # assert len(mask_files) == 2, f"{idx}: {mask_files}"
 
-        img = Image.open(img_files[0])
-        file = open(label_files[0],"r")
-
-        label = int(file.read())
-
-        if random.random() > 1.5:
-            img = transforms.functional.hflip(img)
-
-        # Random vertical flipping
-        if random.random() > 1.5:
-            img = transforms.functional.vflip(img)
-
-
-        # Random affine
-        if random.random() > 1.0:
-            rotation = random.randint(-180, 180)
-            translate = [random.randint(-10,10), random.randint(-10,10)]
-            scale = 1.0
-            shear = random.randint(-50, 50)
-
-            img = transforms.functional.affine(img, rotation, translate, scale, shear)
-
+        img = Image.open(img_files)
 
 
         img = self.preprocess(img)
 
-
+        with open(label_files, "rb") as f:
+            label = pickle.load(f)
 
         return (
             img,
-            torch.ones((1,))*label)
+            torch.tensor(label)
+            )

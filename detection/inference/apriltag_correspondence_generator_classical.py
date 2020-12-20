@@ -14,7 +14,7 @@ import AprilTagHelper
 
 def process(args):
 
-    files_list = glob.glob(os.path.join(args.image_dir, '*.jpg'))
+    files_list = glob.glob(os.path.join(args.image_dir, '*.bmp'))
     print("Found {} files in {}".format(len(files_list),args.image_dir))
 
     dictionary = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_APRILTAG_36h11)
@@ -30,9 +30,12 @@ def process(args):
     for file_name in tqdm(files_list):
         print("Working on ", file_name)
         image = cv2.imread(file_name)
+        image = cv2.resize(image, (2048, 2048))
 
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         corners, ids, rejectedImgPoints = cv2.aruco.detectMarkers(gray, dictionary, parameters=detectorParameters)
+        if corners is None or ids is None:
+            continue
 
         corners, ids = zip(*[ [corners,_] for _,corners in sorted(zip(ids,corners)) ])
 
@@ -54,7 +57,7 @@ def process(args):
     markerLength = 2.4 # Here, measurement unit is centimetre.
     markerSeparation = 1.2   # Here, measurement unit is centimetre.
 
-    board = cv2.aruco.GridBoard_create(5, 5, markerLength, markerSeparation, dictionary, firstMarker = 350)
+    board = cv2.aruco.GridBoard_create(5, 5, markerLength, markerSeparation, dictionary, firstMarker = 300)
 
     # img = board.draw((500 , 500))
     # cv2.imshow('img', img)
