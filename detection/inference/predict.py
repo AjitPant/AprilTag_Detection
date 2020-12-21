@@ -9,12 +9,9 @@ import torch
 
 from PIL import Image
 import dataset_classifier
-import dataset_classifier_id
 
 from Unet import Unet
 from classifier import Resnet
-from classifier_id import Resnet as Resnet_id
-from corners_to_crop import crop_to_corners
 from dataset import DirDataset
 
 from torchvision import datasets, models, transforms
@@ -299,23 +296,13 @@ def reduce_to_tags(net, net_id, img, response_1, response_2, filename, hparams):
 
         im31Reg = Image.fromarray(im1Reg)
 
-        ds = dataset_classifier_id.DirDataset('', '')
-        im31Reg = (ds.preprocess(im31Reg))
-        out = net_id(im31Reg.unsqueeze(0).to(device))
-
-        glb_id = ((np.argmax(out.squeeze(0).cpu()))).item()
-        # if(torch.softmax(out,dim = 1)[0][glb_id]<0.5):
-        #     continue;
-
-        # if( glb_id == 587):
-        #     continue
         inf_ind+=1
         print(inf_ind)
         with open("./data_out/file_n.txt", "a") as diff_file:
 
             diff_file.write(str(inf_ind)+"\n")
 
-        cv2.putText(im3Reg, "id: "+str(glb_id), (tag_size//2-20, tag_size//2), cv2.FONT_HERSHEY_SIMPLEX, 1, (100,255,100), 2)
+        # cv2.putText(im3Reg, "id: "+str(glb_id), (tag_size//2-20, tag_size//2), cv2.FONT_HERSHEY_SIMPLEX, 1, (100,255,100), 2)
         cv2.putText(im3Reg, "tag_used: "+str(inf_ind), (20, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,0,255), 1)
         cv2.putText(im3Reg, "class_ind: "+str(class_ind), (100, 100), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,0,255), 1)
 
@@ -472,14 +459,10 @@ def main(hparams):
         net_2.to(device)
         net_2.eval()
 
-        net_id = Resnet_id.load_from_checkpoint(hparams.id_classifier_net)
-        net_id.freeze()
-        net_id.to(device)
-        net_id.eval()
         img_list = [str(item) for item in glob.glob(hparams.img)]
 
         for img_str in img_list:
-            im_size = 1024
+            im_size = 1024*2
             img = Image.open(img_str).convert('RGB')
 
 
@@ -499,7 +482,7 @@ def main(hparams):
 
             _mask = _mask.astype(np.uint8)
 
-            reduce_to_tags(net_2, net_id,img, _mask, mask, img_str, hparams)
+            reduce_to_tags(net_2, net_2,img, _mask, mask, img_str, hparams)
 
 
 
