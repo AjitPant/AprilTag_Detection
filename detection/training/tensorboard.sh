@@ -1,16 +1,16 @@
 #!/bin/sh
-#SBATCH --job-name=tf_job_test
+#SBATCH --job-name=tensorboard_lightning
 # Job name
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 # Run on a single CPU
-#SBATCH --time=0:05:00
+#SBATCH --time=10:00:00
 # Time limit hrs:min:sec
 #SBATCH --output=tf_test_%j.out
 # Standard output and error log
 #SBATCH --cpus-per-task=1
 #SBATCH --gres=gpu:0
-#SBATCH --mem=16GB
+#SBATCH --mem=1GB
 #SBATCH --partition=dgx
 
 echo $CUDA_VISIBLE_DEVICES
@@ -31,9 +31,11 @@ echo "working directory = $SLURM_SUBMIT_DIR"
 pwd; hostname; date |tee result
 
 echo $CUDA_VISIBLE_DEVICES
-#docker system prune  -f
+nvidia-smi
 
-docker build -t pytorchlightning-mod/pytorch-lightning:base-conda-py3.8-torch1.7-train .
+
+nvidia-docker run --rm  --ipc=host -t ${USER_TTY} --name $SLURM_JOB_ID --user $(id -u):$(id -g) -v /raid//apant_ma/:/raid/apant_ma pytorchlightning-mod/pytorch-lightning:base-conda-py3.8-torch1.7-train tensorboard --logdir /raid/apant_ma/AprilTag-Detection/AprilTag_Detection/detection/training/lightning_logs/lightning_logs/version_0 --port 6006
+
 
 docker container ls
 nvidia-smi
