@@ -36,10 +36,6 @@ class DirDataset(Dataset):
                                   height=original_height//2, width=original_width//2, p=1.0),
                 A.RandomSizedCrop(min_max_height=(original_height//1.5, original_height//1),
                                   height=original_height//4, width=original_width//4, p=1.0),
-                A.RandomSizedCrop(min_max_height=(original_height//4, original_height//1),
-                                  height=original_height//4, width=original_width//4, p=1.0),
-                A.RandomSizedCrop(min_max_height=(original_height//8, original_height//4),
-                                  height=original_height//4, width=original_width//4, p=1.0),
                 A.RandomSizedCrop(min_max_height=(original_height//8, original_height//4),
                                   height=original_height//4, width=original_width//8, p=1.0),
             ], p=0.8),
@@ -48,7 +44,12 @@ class DirDataset(Dataset):
             A.OneOf([
                 A.Blur((5,11), p = 0.5),
                 A.MotionBlur((5,11),p =  0.5),
-            ], p=0.5),
+                A.GaussianBlur(),
+                A.GaussianBlur(),
+                A.MedianBlur(),
+                A.MedianBlur(),
+
+            ], p=1.0),
 
             A.OneOf([
                 A.ToGray(),
@@ -65,15 +66,15 @@ class DirDataset(Dataset):
                 A.RandomRotate90(p=0.5),
                 A.Rotate(limit=180, p=0.5),
             ], p=0.5),
-            A.CLAHE(p=0.3),
-            A.GaussNoise(),
+            A.CLAHE(p=0.1),
+            A.GaussNoise(p = 0.2),
             A.OneOf([
                 A.RandomRain(),
                 A.RandomFog( fog_coef_lower = 0.1, fog_coef_upper = 0.3),
-            ], p=0.5),
+            ], p=0.1),
             A.OneOf([
-                A.RandomShadow(p=0.8, num_shadows_upper=5),
-                A.RandomSunFlare(src_radius=40),
+                A.RandomShadow(p=0.4, num_shadows_upper=5),
+                A.RandomSunFlare(src_radius=40,p = 0.5 ),
             ], p=0.4),
             A.OneOf([
                 A.RandomBrightnessContrast(p=0.5),

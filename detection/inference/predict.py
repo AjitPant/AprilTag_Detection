@@ -462,7 +462,7 @@ def main(hparams):
         img_list = [str(item) for item in glob.glob(hparams.img)]
 
         for img_str in img_list:
-            im_size = 1024
+            im_size = 1024*2
             img = Image.open(img_str).convert('RGB')
 
 
@@ -472,7 +472,7 @@ def main(hparams):
             width, height = img.size
             open_cv_image = np.array(img)
             # Convert RGB to BGR
-            # open_cv_image = open_cv_image[:, :, ::-1].copy()
+            open_cv_image = open_cv_image[:, :, ::-1].copy()
 
             img = Image.fromarray(open_cv_image)
 
