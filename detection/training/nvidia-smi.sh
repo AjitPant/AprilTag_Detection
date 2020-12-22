@@ -4,13 +4,13 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 # Run on a single CPU 
-#SBATCH --time=00:00:30
+#SBATCH --time=00:00:10
 # Time limit hrs:min:sec
 #SBATCH --output=tf_test_%j.out
 # Standard output and error log
 #SBATCH --cpus-per-task=1
 #SBATCH --gres=gpu:0
-#SBATCH --mem=0GB
+#SBATCH --mem=1GB
 #SBATCH --partition=dgx
 
 echo $CUDA_VISIBLE_DEVICES
@@ -38,7 +38,7 @@ echo $CUDA_VISIBLE_DEVICES
 ###docker images
 docker container ls
 nvidia-smi
-docker stats
+#docker stats
 #top
 
 docker container ls
