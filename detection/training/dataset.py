@@ -42,14 +42,11 @@ class DirDataset(Dataset):
 
             A.PadIfNeeded(min_height=original_height, min_width=original_width, p = 1.0, border_mode=cv2.BORDER_CONSTANT, value = 0),
             A.OneOf([
-                A.Blur((5,11), p = 0.5),
-                A.MotionBlur((5,11),p =  0.5),
-                A.GaussianBlur(),
-                A.GaussianBlur(),
-                A.MedianBlur(),
-                A.MedianBlur(),
+                A.Blur((5,45), p = 0.5),
+                A.MotionBlur((5,45),p =  0.5),
+                A.GaussianBlur(45),
 
-            ], p=1.0),
+            ], p=0.9),
 
             A.OneOf([
                 A.ToGray(),
@@ -74,7 +71,7 @@ class DirDataset(Dataset):
             ], p=0.1),
             A.OneOf([
                 A.RandomShadow(p=0.4, num_shadows_upper=5),
-                A.RandomSunFlare(src_radius=40,p = 0.5 ),
+                A.RandomSunFlare(src_radius=20,p = 0.5 ),
             ], p=0.4),
             A.OneOf([
                 A.RandomBrightnessContrast(p=0.5),
