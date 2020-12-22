@@ -53,7 +53,7 @@ def reduce_to_tags(net, net_id, img, response_1, response_2, filename, hparams):
     mask_corners = response_2
     segregates = []
 
-    mask_corners =  (mask_corners>0.5).astype(np.uint8)
+    mask_corners =  (mask_corners>0.005).astype(np.uint8)
 
     kernel = np.ones((5,5),np.uint8)
     mask_segmentation = cv2.erode(mask_segmentation,kernel,iterations = 2)
@@ -462,7 +462,7 @@ def main(hparams):
         img_list = [str(item) for item in glob.glob(hparams.img)]
 
         for img_str in img_list:
-            im_size = 1024*2
+            im_size = 1024
             img = Image.open(img_str).convert('RGB')
 
 
@@ -494,7 +494,6 @@ if __name__ == '__main__':
     parent_parser.add_argument('--checkpoint', required=True, help = "Network for segmentation")
     parent_parser.add_argument('--checkpoint_bit', required=True, help = "Network for segmentation")
     parent_parser.add_argument('--id_net', required=True, help = "Network for corner classification")
-    parent_parser.add_argument('--id_classifier_net', required=True, help = "Network for tag classification")
     # parent_parser.add_argument('--fit_out_net', required=True, help = "Network for tag classification")
     parent_parser.add_argument('--img', required=True, type = str)
 

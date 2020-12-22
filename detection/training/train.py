@@ -10,7 +10,6 @@ from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 from pytorch_lightning.profiler import AdvancedProfiler
 
 
-from pytorch_lightning.loggers import TensorBoardLogger
 
 def main(hparams):
     print(hparams.dataset)
@@ -37,7 +36,6 @@ def main(hparams):
 
     )
 
-    logger = TensorBoardLogger('tb_logs', name='my_model')
 
     trainer = Trainer(
         num_nodes=1,

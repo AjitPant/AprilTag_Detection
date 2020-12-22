@@ -46,7 +46,7 @@ class DirDataset(Dataset):
                                   height=original_height//4, width=original_width//8, p=1.0),
             ], p=0.8),
 
-            A.PadIfNeeded(min_height=original_height, min_width=original_width, p = 1.0),
+            A.PadIfNeeded(min_height=original_height, min_width=original_width, p = 1.0, border_mode=cv2.BORDER_CONSTANT, value = 0),
             A.OneOf([
                 A.Blur((5,11), p = 0.5),
                 A.MotionBlur((5,11),p =  0.5),
