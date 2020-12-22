@@ -9,7 +9,7 @@
 #SBATCH --output=tf_test_%j.out
 # Standard output and error log
 #SBATCH --cpus-per-task=4
-#SBATCH --gres=gpu:0
+#SBATCH --gres=gpu:2
 #SBATCH --mem=8GB
 #SBATCH --partition=dgx
 
@@ -36,14 +36,12 @@ echo $CUDA_VISIBLE_DEVICES
 #docker build -t pytorchlightning-mod/pytorch-lightning:base-conda-py3.8-torch1.7-train .
 #docker images
 
-#docker kill 3466c215aa01      fe7c2d292358
 
 #docker container ls
 nvidia-smi
 
 
-######################NV_GPU=$CUDA_VISIBLE_DEVICES nvidia-docker run --rm  -v /raid//apant_ma/:/raid/apant_ma pytorchlightning-mod/pytorch-lightning:base-conda-py3.8-torch1.7-train rm -r /raid/apant_ma/AprilTag-Detection/AprilTag_Detection/detection/training/lightning_logs
-NV_GPU=2 nvidia-docker run --rm  --ipc=host -t ${USER_TTY} --name $SLURM_JOB_ID --user $(id -u):$(id -g) -v /raid//apant_ma/:/raid/apant_ma pytorchlightning-mod/pytorch-lightning:base-conda-py3.8-torch1.7-train python /raid/apant_ma/AprilTag-Detection/AprilTag_Detection/detection/training/train.py --dataset  /raid/apant_ma/AprilTag-Detection/AprilTag_Detection/DatasetGeneration/out6 --n_gpu 1 --batch_size 6   --checkpoint /raid/apant_ma/AprilTag-Detection/AprilTag_Detection/detection/training/lightning_logs/version_4/checkpoints-v6.ckpt 
+NV_GPU=2,3 nvidia-docker run --rm  --ipc=host -t ${USER_TTY} --name $SLURM_JOB_ID --user $(id -u):$(id -g) -v /raid//apant_ma/:/raid/apant_ma pytorchlightning-mod/pytorch-lightning:base-conda-py3.8-torch1.7-train python /raid/apant_ma/AprilTag-Detection/AprilTag_Detection/detection/training/train.py --dataset  /raid/apant_ma/AprilTag-Detection/AprilTag_Detection/DatasetGeneration/out6 --n_gpu 2 --batch_size 6   --checkpoint /raid/apant_ma/AprilTag-Detection/AprilTag_Detection/detection/training/lightning_logs/version_4/checkpoints-v23.ckpt 
 #NV_GPU=$CUDA_VISIBLE_DEVICES nvidia-docker run --rm  --ipc=host -t ${USER_TTY} --name $SLURM_JOB_ID --user $(id -u):$(id -g) -v /raid//apant_ma/:/raid/apant_ma pytorchlightning-mod/pytorch-lightning:base-conda-py3.8-torch1.7-train python /raid/apant_ma/AprilTag-Detection/AprilTag_Detection/detection/training/train.py --dataset  /raid/apant_ma/AprilTag-Detection/AprilTag_Detection/DatasetGeneration/out --n_gpu 6 --batch_size 4
 docker container ls
 nvidia-smi
