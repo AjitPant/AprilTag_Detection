@@ -12,9 +12,7 @@ import pytorch_lightning as pl
 
 from dataset_classifier import DirDataset
 
-from torchvision.models import resnet
 
-resnet = resnet.resnet50(pretrained=True)
 
 class Resnet(pl.LightningModule):
     def __init__(self, hparams):
@@ -72,8 +70,8 @@ class Resnet(pl.LightningModule):
         n_train = len(dataset) - n_val
 
         train_ds, val_ds = random_split(dataset, [n_train, n_val], generator=torch.Generator().manual_seed(347))
-        train_loader = DataLoader(train_ds, batch_size=16,num_workers=8, pin_memory=True, shuffle=True)
-        val_loader = DataLoader(val_ds, batch_size=16,num_workers=8, pin_memory=True, shuffle=False)
+        train_loader = DataLoader(train_ds, batch_size=16,num_workers=32, pin_memory=True, shuffle=True)
+        val_loader = DataLoader(val_ds, batch_size=16,num_workers=32, pin_memory=True, shuffle=False)
 
         return {
             'train': train_loader,

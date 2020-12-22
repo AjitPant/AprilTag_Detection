@@ -55,7 +55,7 @@ def main(hparams):
 if __name__ == '__main__':
     parent_parser = ArgumentParser(add_help=False)
     parent_parser.add_argument('--dataset', required=True)
-    parent_parser.add_argument('--log_dir', default='lightning_logs')
+    parent_parser.add_argument('--log_dir', default='lightning_log')
     parent_parser.add_argument('--checkpoint', default=None)
     parent_parser.add_argument('--batch_size', type=int, default=1)
     parser = Resnet.add_model_specific_args(parent_parser)

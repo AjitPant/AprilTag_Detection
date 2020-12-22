@@ -37,8 +37,6 @@ class DirDataset(Dataset):
                 A.RandomSizedCrop(min_max_height=(original_height//1.5, original_height//1),
                                   height=original_height//4, width=original_width//4, p=1.0),
                 A.RandomSizedCrop(min_max_height=(original_height//4, original_height//1),
-                                  height=original_height//8, width=original_width//8, p=1.0),
-                A.RandomSizedCrop(min_max_height=(original_height//4, original_height//1),
                                   height=original_height//4, width=original_width//4, p=1.0),
                 A.RandomSizedCrop(min_max_height=(original_height//8, original_height//4),
                                   height=original_height//4, width=original_width//4, p=1.0),

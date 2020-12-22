@@ -1,6 +1,7 @@
 import os, glob
 import random
 import pickle
+import cv2
 
 from PIL import Image
 
@@ -49,13 +50,25 @@ class DirDataset(Dataset):
 
         img = Image.open(img_files)
 
-
-        img = self.preprocess(img)
-
         with open(label_files, "rb") as f:
             label = pickle.load(f)
 
+        # cv2.namedWindow("img"+str(idx), cv2.WINDOW_NORMAL)
+        # cv2.namedWindow("label"+str(idx), cv2.WINDOW_NORMAL)
+
+        # cv2.imshow("img"+str(idx), np.array(img))
+        # cv2.imshow("label"+str(idx), np.array(label).reshape(10, 10))
+        # cv2.waitKey(0)
+
+        img = self.preprocess(img)
+        label = torch.tensor(label)
+        # print(img.max())
+        # print(img.min())
+        # print(label.max())
+        # print(label.min())
+
+
         return (
             img,
-            torch.tensor(label)
+            label
             )
