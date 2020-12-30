@@ -122,7 +122,7 @@ class Unet(LightningModule):
 
         num_classes: int = 2
         num_layers: int = 7
-        features_start: int = 16
+        features_start: int = 8
         bilinear: bool = True
 
         self.hparams = hparams

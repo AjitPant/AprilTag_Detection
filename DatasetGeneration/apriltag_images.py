@@ -6,6 +6,7 @@ import copy
 TAG36h11 = 'tag36h11'
 TAG41h12 = 'tag41h12'
 TAG52h13 = 'tag52h13'
+TAG16h5 =  'tag16h5'
 
 
 class AprilTagImages(object):
@@ -21,7 +22,7 @@ class AprilTagImages(object):
         self.family = family
         # Path to mosaic image of April Tag images.
         self.path = os.path.join(root,'tag_data', family, 'mosaic.png')
-        self.images, self.bytecodes = self.extract_images()
+        self.images, self.bytecodes,self.familycode = self.extract_images()
 
     def __len__(self):
         """
@@ -41,10 +42,59 @@ class AprilTagImages(object):
 
         if self.family == TAG36h11:
             step = 10
+            familycode = [
+                           [1, 1, 1, 1, 1, 1, 1, 1, 1, 1] ,
+                           [1, 0, 0, 0, 0, 0, 0, 0, 0, 1] ,
+                           [1, 0, 2, 2, 2, 2, 2, 2, 0, 1] ,
+                           [1, 0, 2, 2, 2, 2, 2, 2, 0, 1] ,
+                           [1, 0, 2, 2, 2, 2, 2, 2, 0, 1] ,
+                           [1, 0, 2, 2, 2, 2, 2, 2, 0, 1] ,
+                           [1, 0, 2, 2, 2, 2, 2, 2, 0, 1] ,
+                           [1, 0, 2, 2, 2, 2, 2, 2, 0, 1] ,
+                           [1, 0, 0, 0, 0, 0, 0, 0, 0, 1] ,
+                           [1, 1, 1, 1, 1, 1, 1, 1, 1, 1] ,
+                           ]
+
+
         elif self.family == TAG41h12:
             step = 9
+            familycode = [
+                           [2, 2, 2, 2, 2, 2, 2, 2, 2] ,
+                           [2, 0, 0, 0, 0, 0, 0, 0, 2] ,
+                           [2, 0, 1, 1, 1, 1, 1, 0, 2] ,
+                           [2, 0, 1, 2, 2, 2, 1, 0, 2] ,
+                           [2, 0, 1, 2, 2, 2, 1, 0, 2] ,
+                           [2, 0, 1, 2, 2, 2, 1, 0, 2] ,
+                           [2, 0, 1, 1, 1, 1, 1, 0, 2] ,
+                           [2, 0, 0, 0, 0, 0, 0, 0, 2] ,
+                           [2, 2, 2, 2, 2, 2, 2, 2, 2] ,
+                         ]
         elif self.family == TAG52h13:
             step = 10
+            familycode = [
+                           [2, 2, 2, 2, 2, 2, 2, 2, 2, 2] ,
+                           [2, 0, 0, 0, 0, 0, 0, 0, 0, 2] ,
+                           [2, 0, 1, 1, 1, 1, 1, 1, 0, 2] ,
+                           [2, 0, 1, 2, 2, 2, 2, 1, 0, 2] ,
+                           [2, 0, 1, 2, 2, 2, 2, 1, 0, 2] ,
+                           [2, 0, 1, 2, 2, 2, 2, 1, 0, 2] ,
+                           [2, 0, 1, 2, 2, 2, 2, 1, 0, 2] ,
+                           [2, 0, 1, 1, 1, 1, 1, 1, 0, 2] ,
+                           [2, 0, 0, 0, 0, 0, 0, 0, 0, 2] ,
+                           [2, 2, 2, 2, 2, 2, 2, 2, 2, 2] ,
+                         ]
+        elif self.family == TAG16h5:
+            step = 8
+            familycode = [
+                           [1, 1, 1, 1, 1, 1, 1, 1] ,
+                           [1, 0, 0, 0, 0, 0, 0, 1] ,
+                           [1, 0, 2, 2, 2, 2, 0, 1] ,
+                           [1, 0, 2, 2, 2, 2, 0, 1] ,
+                           [1, 0, 2, 2, 2, 2, 0, 1] ,
+                           [1, 0, 2, 2, 2, 2, 0, 1] ,
+                           [1, 0, 0, 0, 0, 0, 0, 1] ,
+                           [1, 1, 1, 1, 1, 1, 1, 1] ,
+                           ]
         else:
             assert False, 'Unknown April tag family!' + self.family
 
@@ -63,7 +113,7 @@ class AprilTagImages(object):
                     dsize=(self.size, self.size),
                     interpolation=cv2.INTER_NEAREST)
                 images.append(scaled_image)
-        return images, bytecodes
+        return images, bytecodes,familycode
 
     def corners(self):
 
@@ -76,6 +126,9 @@ class AprilTagImages(object):
         elif self.family == TAG52h13:
             lo = 0.1
             hi = 0.9
+        elif self.family == TAG16h5:
+            lo = 1/8
+            hi = 7/8
         else:
             assert False, 'Unknown April tag family!' + self.family
         return np.array([[[lo, lo], [hi, lo], [hi, hi], [lo, hi]],
@@ -83,4 +136,4 @@ class AprilTagImages(object):
 
     def image(self, idx):
                     assert idx < len(self.images), 'Not a valid index.'
-                    return self.images[idx], self.bytecodes[idx]
+                    return self.images[idx], self.bytecodes[idx], self.familycode

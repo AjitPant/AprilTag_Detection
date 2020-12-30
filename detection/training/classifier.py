@@ -13,32 +13,41 @@ import pytorch_lightning as pl
 from dataset_classifier import DirDataset
 
 
+from torchvision import transforms, datasets, models
+
+
+import torchvision
+resnet = torchvision.models.resnet.resnet50(pretrained=True)
 
 class Resnet(pl.LightningModule):
     def __init__(self, hparams):
         super(Resnet, self).__init__()
         self.hparams = hparams
-        self.model_ft = nn.Sequential(
-                        nn.Linear(3*224*224, 2*224),
-                        nn.ReLU(),
-                        nn.Linear(2*224, 2*224),
-                        nn.ReLU(),
-                        nn.Linear(2*224, 224),
-                        nn.ReLU(),
-                        nn.Linear(224, 140),
-                        nn.ReLU(),
-                        nn.Linear(140, 100)
+        self.model_ft = models.resnet18(pretrained=True)
+        self.num_ftrs = self.model_ft.fc.in_features
+        self.model_ft.fc = nn.Linear(self.num_ftrs, 500)
+        self.H = 10
+
+        self.model_ft_2 = nn.Sequential(
+                nn.Linear(500 + self.H * self.H,224),
+                nn.BatchNorm1d(224),
+                nn.ReLU(),
+                nn.Linear(224, self.H * self.H)
         )
 
     def forward(self, input):
-        return self.model_ft(input.reshape(-1,3*224*224))
+        img, bytecode = input
+        hidden = self.model_ft(img)
+        hidden = hidden.reshape(-1, 500)
+
+        concated_hidden = torch.cat((nn.Sigmoid()(hidden), bytecode.reshape(-1, self.H * self.H)), dim = 1)
+
+        return self.model_ft_2(concated_hidden.reshape(-1,500 + self.H * self.H)).reshape(-1,  self.H, self.H)
 
     def training_step(self, batch, batch_nb):
         x, y = batch
 
-
         y_hat = self.forward(x)
-        y=y.squeeze(1)
         loss = F.binary_cross_entropy_with_logits(y_hat, y)
 
         return {'loss': loss}
@@ -47,7 +56,6 @@ class Resnet(pl.LightningModule):
         x, y = batch
 
         y_hat = self.forward(x)
-        y=y.squeeze(1)
         loss = F.binary_cross_entropy_with_logits(y_hat, y)
 
 
@@ -59,7 +67,7 @@ class Resnet(pl.LightningModule):
         return {'val_loss': avg_loss, 'log': tensorboard_logs}
 
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.parameters(), lr=3e-4)
+        optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
         return [optimizer]
 
     def __dataloader(self):
@@ -70,8 +78,8 @@ class Resnet(pl.LightningModule):
         n_train = len(dataset) - n_val
 
         train_ds, val_ds = random_split(dataset, [n_train, n_val], generator=torch.Generator().manual_seed(347))
-        train_loader = DataLoader(train_ds, batch_size=16,num_workers=32, pin_memory=True, shuffle=True)
-        val_loader = DataLoader(val_ds, batch_size=16,num_workers=32, pin_memory=True, shuffle=False)
+        train_loader = DataLoader(train_ds, batch_size=16,num_workers=12, pin_memory=True, shuffle=True,drop_last=True)
+        val_loader = DataLoader(val_ds, batch_size=16,num_workers=12, pin_memory=True, shuffle=False,drop_last=True)
 
         return {
             'train': train_loader,

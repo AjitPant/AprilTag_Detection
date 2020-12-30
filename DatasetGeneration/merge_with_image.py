@@ -40,11 +40,11 @@ mutex = Lock()
 
 
 cnt = [0,0,0,0]
-def reduce_to_tags(img,  corners_collection, bytecode_collection, filename, args):
-
-    for j,(corners, code) in enumerate(zip(corners_collection, bytecode_collection)):
+def reduce_to_tags(img,  corners_collection, bytecode_collection,familycode_collection, filename, args):
+    pad = 40
+    for j,(corners, bytecode, code) in enumerate(zip(corners_collection, bytecode_collection, familycode_collection)):
             h, status = cv2.findHomography(
-                np.array(corners), np.array([[0, 0], [0, 224], [224, 224], [224, 0]]))
+                np.array(corners), np.array([[pad, pad], [pad, 224-pad], [224-pad, 224-pad], [224-pad, pad]]))
             height, width, channels = img.shape
             im1Reg = cv2.warpPerspective(img, h, (224, 224))
 
@@ -52,10 +52,9 @@ def reduce_to_tags(img,  corners_collection, bytecode_collection, filename, args
             cv2.imwrite(os.path.join(args.out_folder, 'ssimg',
                                      filename[:-4] + "_" + str(j) + '.jpg'), im1Reg)
 
-            code = code.reshape(-1)/255
             with open(os.path.join(args.out_folder, 'simg',
                                      filename[:-4] + "_" + str(j) + '.pkl'), "wb") as f:
-                pickle.dump(code, f)
+                pickle.dump([bytecode, code], f)
 
 
 
@@ -74,7 +73,7 @@ def augment_and_save(file, overlayer, args):
                 exit()
 
             img = cv2.resize(img, (512*4, 512*4))
-            img_out, response_1, response_2, response_3 ,response_id, corners_collection,bytecode_collection = overlayer(img)
+            img_out, response_1, response_2, response_3 ,response_id, corners_collection,bytecode_collection, familycode_collection= overlayer(img)
 
             img_out = cv2.resize(img_out, (1024, 1024), interpolation = cv2.INTER_AREA)
             response_1 = cv2.resize(response_1, (1024, 1024), interpolation = cv2.INTER_AREA)
@@ -84,7 +83,7 @@ def augment_and_save(file, overlayer, args):
 
             corners_collection = [ [x/2 for x in y ]  for y in corners_collection]
 
-            reduce_to_tags(img_out, corners_collection,bytecode_collection, filename, args)
+            reduce_to_tags(img_out, corners_collection,bytecode_collection,familycode_collection, filename, args)
 
             cv2.imwrite(os.path.join(args.out_folder, 'img',
                                      filename[:-4] + "_" + str(j) + '.jpg'), img_out)
@@ -157,11 +156,11 @@ def app():
     directory = os.fsencode(args.img_folder)
     i = 0
 
-    n_processors = 8
+    n_processors = 1
 
-    mx_files = 1000
+    mx_files = 100
 
-    file_list = sorted(list(os.listdir(directory))[2*mx_files:3*mx_files])
+    file_list = sorted(list(os.listdir(directory))[1*mx_files:2*mx_files])
 
     '''
     pass the task function, followed by the parameters to processors

@@ -19,6 +19,7 @@ class backgroundOverlayer(object):
 
         corners_collection = []
         bytecode_collection = []
+        familycode_collection = []
         tags_to_overlay = 50
         out_response = np.zeros(background_img.shape[:2], dtype = np.uint8)
         real_out_response = np.full((background_img.shape[0],background_img.shape[1], 5),0, dtype = np.uint8)
@@ -45,6 +46,7 @@ class backgroundOverlayer(object):
 
             corners_coords = result["corners_uv"]
             bytecode = result["bytecode"]
+            familycode = result["familycode"]
 
             # mask = np.maximum(mask, tag_img)
             _, mask = cv2.threshold(mask, 254, 255, cv2.THRESH_BINARY)
@@ -125,8 +127,9 @@ class backgroundOverlayer(object):
                 really_real_out_response[y_offset:y_offset + height , x_offset:x_offset + width, :-1]  = np.maximum(response_in_use[:,:,:-1], really_real_out_response_view[:,:,:-1])
                 really_real_out_response[y_offset:y_offset + height , x_offset:x_offset + width, -1]  = np.minimum(response_in_use[:,:,-1], really_real_out_response_view[:,:,-1])
 
-                corners_collection.append([np.array([x_offset, y_offset])+corners_coords ])
+                corners_collection.append([np.array([[x_offset, y_offset]])+corners_coords ])
                 bytecode_collection.append(bytecode)
+                familycode_collection.append(familycode)
 
 
         if np.random.uniform(0, 1, 1)[0] > 1.5:
@@ -147,4 +150,4 @@ class backgroundOverlayer(object):
 
 
 
-        return background_img, out_response, np.clip(real_out_response,0,255),np.clip(really_real_out_response,0,255), id_real_out_response, corners_collection, bytecode_collection
+        return background_img, out_response, np.clip(real_out_response,0,255),np.clip(really_real_out_response,0,255), id_real_out_response, corners_collection, bytecode_collection, familycode_collection

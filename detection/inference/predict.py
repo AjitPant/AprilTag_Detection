@@ -53,7 +53,7 @@ def reduce_to_tags(net, net_id, img, response_1, response_2, filename, hparams):
     mask_corners = response_2
     segregates = []
 
-    mask_corners =  (mask_corners>0.005).astype(np.uint8)
+    mask_corners =  (mask_corners>0.5).astype(np.uint8)
 
     kernel = np.ones((5,5),np.uint8)
     mask_segmentation = cv2.erode(mask_segmentation,kernel,iterations = 2)
@@ -242,7 +242,7 @@ def reduce_to_tags(net, net_id, img, response_1, response_2, filename, hparams):
         # print(corner_list)
 
 
-        pad = 40
+        pad = 80
         tag_size = 224
         h, status = cv2.findHomography(
             np.array(corner_list), np.array([[pad, pad], [pad, tag_size-pad],[tag_size-pad, tag_size-pad],  [tag_size-pad, 0+pad]]))
@@ -267,16 +267,17 @@ def reduce_to_tags(net, net_id, img, response_1, response_2, filename, hparams):
 
         ds = dataset_classifier.DirDataset('', '')
         im2Reg = (ds.preprocess(im2Reg))
+        with open("bytecode_36h11.pkl", "rb") as f:
+            bytecode_36h11 = pickle.load(f)
+        out = net((im2Reg.unsqueeze(0).to(device), torch.tensor(bytecode_36h11).to(device)))
 
 
-
-        out = net(im2Reg.unsqueeze(0).to(device))
-
-
-        print(torch.round(nn.Sigmoid()(out)).reshape(10,10))
 
         cv2.namedWindow('unrotated_tag', cv2.WINDOW_NORMAL)
         cv2.imshow('unrotated_tag', im1Reg)
+
+        cv2.namedWindow('decoded_tag', cv2.WINDOW_NORMAL)
+        cv2.imshow('decoded_tag', torch.round(nn.Sigmoid()(out)).reshape(-1).reshape(10,10).cpu().numpy().transpose())
         cv2.waitKey(cv_time_wait)
 
         rotation = 0
@@ -389,7 +390,7 @@ def reduce_to_tags(net, net_id, img, response_1, response_2, filename, hparams):
 
 
 
-def predict(net, img, device='cuda', threshold=0.5, kernel =1024, stride =768):
+def predict(net, img, device='cuda', threshold=0.5, kernel =1024, stride =512):
     with torch.no_grad():
         ds = DirDataset('', '')
         _img = (ds.preprocess(img))
@@ -462,7 +463,7 @@ def main(hparams):
         img_list = [str(item) for item in glob.glob(hparams.img)]
 
         for img_str in img_list:
-            im_size = 1024*2
+            im_size = 1024
             img = Image.open(img_str).convert('RGB')
 
 
