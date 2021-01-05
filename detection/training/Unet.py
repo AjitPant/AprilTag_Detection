@@ -1,4 +1,5 @@
 from argparse import ArgumentParser
+import copy
 
 import torch
 import torch.nn as nn
@@ -139,8 +140,8 @@ class Unet(LightningModule):
     ):
         super().__init__()
 
-        num_classes: int = 2
-        num_layers: int = 7
+        num_classes: int = 1
+        num_layers: int = 5
         features_start: int = 16
         bilinear: bool = True
 
@@ -168,17 +169,18 @@ class Unet(LightningModule):
 
         layers.append(nn.Conv2d(feats, int(num_classes), kernel_size=1))
 
-        self.layers = nn.ModuleList(layers)
+        self.layers_segmentation = nn.ModuleList(copy.deepcopy(layers))
+        self.layers_corners = nn.ModuleList(copy.deepcopy(layers))
 
     def forward(self, x):
-        xi = [self.layers[0](x)]
+        xi = [[self.layers_segmentation[0](x), self.layers_corners[0](x)]]
         # Down path
-        for layer in self.layers[1:self.num_layers]:
-            xi.append(layer(xi[-1]))
+        for layer_seg, layer_corner in zip(self.layers_segmentation[1:self.num_layers], self.layers_corners[1:self.num_layers]):
+            xi.append([layer_seg(xi[-1][0]), layer_corner(xi[-1][1])])
         # Up path
-        for i, layer in enumerate(self.layers[self.num_layers:-1]):
-            xi[-1] = layer(xi[-1], xi[-2 - i])
-        return self.layers[-1](xi[-1])
+        for i, (layer_seg, layer_corner) in enumerate(zip(self.layers_segmentation[self.num_layers:-1], self.layers_corners[self.num_layers:-1])):
+            xi[-1] = [layer_seg(xi[-1][0], xi[-2 - i][0]), layer_corner(xi[-1][1], xi[-2-i][1])]
+        return torch.stack([self.layers_segmentation[-1](xi[-1][0]), self.layers_corners[-1](xi[-1][1])], dim = 1).squeeze(2);
     def training_step(self, batch, batch_nb):
         x, y = batch
 
@@ -186,10 +188,10 @@ class Unet(LightningModule):
         y_hat = self.forward(x)
 
 
-        loss = self.loss_func(y_hat, y)
+        loss = self.loss_func(y_hat[:,1], y[:,1])
         dice = self.val_func(y_hat[:,0], y[:,0]) #+ self.val_func(y_hat[:,1], y[:,1]) + self.loss_func(y_hat, y)
 
-        t_loss = loss 
+        t_loss = loss  + dice
 
         self.log('bce', loss, on_step=True, on_epoch=False, prog_bar=True)
         self.log('dice', dice, on_step=True, on_epoch=False, prog_bar=True)
