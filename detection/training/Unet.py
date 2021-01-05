@@ -1,4 +1,5 @@
 from argparse import ArgumentParser
+import copy
 
 import torch
 import torch.nn as nn
@@ -10,7 +11,26 @@ from pytorch_lightning import LightningModule
 
 from dataset import DirDataset
 
+class FocalLoss(nn.Module):
+    def __init__(self, alpha=1, gamma=2, logits=True, reduce=True):
+        super(FocalLoss, self).__init__()
+        self.alpha = alpha
+        self.gamma = gamma
+        self.logits = logits
+        self.reduce = reduce
 
+    def forward(self, inputs, targets):
+        if self.logits:
+            BCE_loss = F.binary_cross_entropy_with_logits(inputs, targets, reduce=False)
+        else:
+            BCE_loss = F.binary_cross_entropy(inputs, targets, reduce=False)
+        pt = torch.exp(-BCE_loss)
+        F_loss = self.alpha * (1-pt)**self.gamma * BCE_loss
+
+        if self.reduce:
+            return torch.mean(F_loss)
+        else:
+            return torch.sum(F_loss)
 
 
 
@@ -120,14 +140,16 @@ class Unet(LightningModule):
     ):
         super().__init__()
 
-        num_classes: int = 2
-        num_layers: int = 7
+        num_classes: int = 1
+        num_layers: int = 5
         features_start: int = 16
         bilinear: bool = True
 
         self.hparams = hparams
+        self.wt = 1
 
         self.loss_func = nn.BCEWithLogitsLoss(pos_weight=torch.Tensor([1.0]))
+        #self.val_func = FocalLoss(alpha=2, gamma=2)
         self.val_func = dice_loss
 
         self.num_layers = num_layers
@@ -147,17 +169,18 @@ class Unet(LightningModule):
 
         layers.append(nn.Conv2d(feats, int(num_classes), kernel_size=1))
 
-        self.layers = nn.ModuleList(layers)
+        self.layers_segmentation = nn.ModuleList(copy.deepcopy(layers))
+        self.layers_corners = nn.ModuleList(copy.deepcopy(layers))
 
     def forward(self, x):
-        xi = [self.layers[0](x)]
+        xi = [[self.layers_segmentation[0](x), self.layers_corners[0](x)]]
         # Down path
-        for layer in self.layers[1:self.num_layers]:
-            xi.append(layer(xi[-1]))
+        for layer_seg, layer_corner in zip(self.layers_segmentation[1:self.num_layers], self.layers_corners[1:self.num_layers]):
+            xi.append([layer_seg(xi[-1][0]), layer_corner(xi[-1][1])])
         # Up path
-        for i, layer in enumerate(self.layers[self.num_layers:-1]):
-            xi[-1] = layer(xi[-1], xi[-2 - i])
-        return self.layers[-1](xi[-1])
+        for i, (layer_seg, layer_corner) in enumerate(zip(self.layers_segmentation[self.num_layers:-1], self.layers_corners[self.num_layers:-1])):
+            xi[-1] = [layer_seg(xi[-1][0], xi[-2 - i][0]), layer_corner(xi[-1][1], xi[-2-i][1])]
+        return torch.stack([self.layers_segmentation[-1](xi[-1][0]), self.layers_corners[-1](xi[-1][1])], dim = 1).squeeze(2);
     def training_step(self, batch, batch_nb):
         x, y = batch
 
@@ -165,15 +188,20 @@ class Unet(LightningModule):
         y_hat = self.forward(x)
 
 
-        loss = self.loss_func(y_hat, y)
-        dice = self.val_func(y_hat[:,0], y[:,0]) + self.val_func(y_hat[:,1], y[:,1]) + self.loss_func(y_hat, y)
+        loss = self.loss_func(y_hat[:,1], y[:,1])
+        dice = self.val_func(y_hat[:,0], y[:,0]) #+ self.val_func(y_hat[:,1], y[:,1]) + self.loss_func(y_hat, y)
 
+        t_loss = loss  + dice
 
         self.log('bce', loss, on_step=True, on_epoch=False, prog_bar=True)
         self.log('dice', dice, on_step=True, on_epoch=False, prog_bar=True)
+        self.log('t_loss', t_loss, on_step=True, on_epoch=False, prog_bar=False)
+        self.log('wt', self.wt, on_step=False, on_epoch=True, prog_bar=False)
 
 
-        return  dice
+        return t_loss
+    def training_epoch_end(self, training_step_outputs):
+        self.wt *= 0.95
 
     def validation_step(self, batch, batch_nb):
         x, y = batch
@@ -204,8 +232,8 @@ class Unet(LightningModule):
         print(len(dataset))
 
         train_ds, val_ds = random_split(dataset, [n_train, n_val]) #, generator=torch.Generator().manual_seed(347))
-        train_loader = DataLoader(train_ds, batch_size=self.hparams.batch_size,num_workers=8, pin_memory=True, shuffle=True)
-        val_loader = DataLoader(val_ds, batch_size=self.hparams.batch_size,num_workers=8, pin_memory=True, shuffle=False)
+        train_loader = DataLoader(train_ds, batch_size=self.hparams.batch_size,num_workers=32, pin_memory=True, shuffle=True)
+        val_loader = DataLoader(val_ds, batch_size=self.hparams.batch_size,num_workers=32, pin_memory=True, shuffle=False)
 
         return {
             'train': train_loader,

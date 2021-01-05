@@ -14,10 +14,10 @@ from torchvision import transforms
 class DirDataset(Dataset):
 
     def __init__(self, img_dir, label_dir ,scale=1):
-        # self.img_dir = img_dir
-        # self.label_dir = label_dir
-        self.img_dir = './dataset/36h11-300/ssimg'
-        self.label_dir = './dataset/36h11-300/simg'
+        self.img_dir = img_dir
+        self.label_dir = label_dir
+        #self.img_dir = './dataset/try/ssimg'
+        #self.label_dir = './dataset/try/simg'
         self.scale = scale
         self.label_side = 10
 

@@ -38,8 +38,10 @@ echo $CUDA_VISIBLE_DEVICES
 ###docker images
 docker container ls
 nvidia-smi
-#docker stats
+docker kill 0d9d51f31fa0
+docker stats
 #top
+
 
 docker container ls
 nvidia-smi

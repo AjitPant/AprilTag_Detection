@@ -77,7 +77,7 @@ class Resnet(pl.LightningModule):
         return {'val_loss': avg_loss, 'log': tensorboard_logs}
 
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.parameters(), lr=4e-3)
+        optimizer = torch.optim.Adam(self.parameters(), lr=8e-3)
         return [optimizer]
 
     def __dataloader(self):

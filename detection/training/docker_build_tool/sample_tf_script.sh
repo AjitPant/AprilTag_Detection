@@ -4,7 +4,7 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 # Run on a single CPU
-#SBATCH --time=0:05:00
+#SBATCH --time=0:25:00
 # Time limit hrs:min:sec
 #SBATCH --output=tf_test_%j.out
 # Standard output and error log

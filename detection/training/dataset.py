@@ -23,30 +23,37 @@ class DirDataset(Dataset):
 
             A.OneOf([
                 A.RandomSizedCrop(min_max_height=(original_height//8, original_height//2),
-                                  height=original_height, width=original_width, p=1.0),
-                A.RandomSizedCrop(min_max_height=(original_height//8, original_height//4),
-                                  height=original_height, width=original_width, p=1.0),
-                A.RandomSizedCrop(min_max_height=(original_height//2, original_height//1),
-                                  height=original_height, width=original_width, p=1.0),
-                A.RandomSizedCrop(min_max_height=(original_height//4, original_height//1),
-                                  height=original_height, width=original_width, p=1.0),
-                A.RandomSizedCrop(min_max_height=(original_height//1.5, original_height//1),
-                                  height=original_height, width=original_width, p=1.0),
-                A.RandomSizedCrop(min_max_height=(original_height//1.5, original_height//1),
-                                  height=original_height//2, width=original_width//2, p=1.0),
-                A.RandomSizedCrop(min_max_height=(original_height//1.5, original_height//1),
-                                  height=original_height//4, width=original_width//4, p=1.0),
+                                  height=original_height//8, width=original_width//8, p=1.0),
+
+                A.RandomSizedCrop(min_max_height=(original_height//8, original_height//1),
+                                  height=original_height//16, width=original_width//16, p=1.0),
+
                 A.RandomSizedCrop(min_max_height=(original_height//8, original_height//4),
                                   height=original_height//4, width=original_width//8, p=1.0),
-            ], p=0.8),
+
+
+                A.RandomSizedCrop(min_max_height=(original_height//4, original_height//1),
+                                  height=original_height//4, width=original_width//4, p=1.0),
+
+
+                A.RandomSizedCrop(min_max_height=(original_height//4, original_height//1),
+                                  height=original_height//2, width=original_width//8, p=1.0),
+
+                A.RandomSizedCrop(min_max_height=(original_height//4, original_height//1),
+                                  height=original_height//4, width=original_width//8, p=1.0),
+
+
+               A.RandomSizedCrop(min_max_height=(original_height//1.5, original_height//1),
+                                  height=original_height//2, width=original_width//2, p=1.0),
+
+            ], p=0.6),
 
             A.PadIfNeeded(min_height=original_height, min_width=original_width, p = 1.0, border_mode=cv2.BORDER_CONSTANT, value = 0),
             A.OneOf([
-                A.Blur((5,45), p = 0.5),
-                A.MotionBlur((5,45),p =  0.5),
-                A.GaussianBlur(45),
+                A.Blur((5,25), p = 0.5),
+                A.MotionBlur((5,25),p =  0.5),
 
-            ], p=0.9),
+            ], p=0.7),
 
             A.OneOf([
                 A.ToGray(),
@@ -57,28 +64,28 @@ class DirDataset(Dataset):
             A.OneOf([
                 A.VerticalFlip(p=0.5),
                 A.HorizontalFlip(p=0.5),
-            ], p=0.8),
+            ], p=0.5),
 
             A.OneOf([
                 A.RandomRotate90(p=0.5),
                 A.Rotate(limit=180, p=0.5),
             ], p=0.5),
-            A.CLAHE(p=0.1),
-            A.GaussNoise(p = 0.2),
+            A.CLAHE(),
+            A.GaussNoise(p = 0.5),
             A.OneOf([
                 A.RandomRain(),
                 A.RandomFog( fog_coef_lower = 0.1, fog_coef_upper = 0.3),
-            ], p=0.1),
+            ], p=0.5),
             A.OneOf([
                 A.RandomShadow(p=0.4, num_shadows_upper=5),
                 A.RandomSunFlare(src_radius=20,p = 0.5 ),
-            ], p=0.4),
+            ], p=0.5),
             A.OneOf([
                 A.RandomBrightnessContrast(p=0.5),
                 A.RGBShift(p=0.5),
                 A.RandomGamma(p=0.8)
             ], p=0.4),
-        ], p=0.8,
+        ], p=0.9,
             additional_targets={
             'image': 'image',
 
