@@ -17,13 +17,12 @@ from torchvision import transforms, datasets, models
 
 
 import torchvision
-resnet = torchvision.models.resnet.resnet50(pretrained=True)
 
 class Resnet(pl.LightningModule):
     def __init__(self, hparams):
         super(Resnet, self).__init__()
         self.hparams = hparams
-        self.model_ft = models.resnet18(pretrained=True)
+        self.model_ft = models.resnet18()
         self.num_ftrs = self.model_ft.fc.in_features
         self.model_ft.fc = nn.Linear(self.num_ftrs, 500)
         self.H = 10
@@ -67,7 +66,7 @@ class Resnet(pl.LightningModule):
         return {'val_loss': avg_loss, 'log': tensorboard_logs}
 
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
+        optimizer = torch.optim.Adam(self.parameters(), lr=8e-3)
         return [optimizer]
 
     def __dataloader(self):

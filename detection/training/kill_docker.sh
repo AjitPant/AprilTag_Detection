@@ -39,10 +39,9 @@ echo $CUDA_VISIBLE_DEVICES
 
 docker container ls
 nvidia-smi
-#docker stats
+docker kill 66c7b9e2c0a1
 #top
 docker rm $(docker stop $(docker ps -a -q --filter ancestor=pytorchlightning-mod/pytorch-lightning:base-conda-py3.8-torch1.7-train --format="{{.ID}}"))
-
 docker container ls
 nvidia-smi
 
