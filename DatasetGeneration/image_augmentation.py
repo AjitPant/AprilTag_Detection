@@ -132,7 +132,6 @@ class ScaleAugmentation(object):
         # if np.random.uniform(0, 1, 1)[0] >= self.prob:
         #     return src_image, src_corners
 
-        height, width = src_image.shape[:2]
 
 
 

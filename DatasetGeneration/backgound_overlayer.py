@@ -34,7 +34,7 @@ class backgroundOverlayer(object):
         #It attemps to generate as many tags as possible till the upper_limit tags_to_overlay, but sometimes two might overlap it will just remove the later one
 
         for tag in range(tags_to_overlay):
-            index = random.randrange(len(self.generator))
+            index = random.randrange(300, len(self.generator))
 
             result = self.generator[index]
 
@@ -89,7 +89,7 @@ class backgroundOverlayer(object):
 
 
                 w_light =  (( light_background/(light_tag + 0.0001)))
-                tag_img_view_lab[:, :, 0] = np.clip(np.multiply(tag_img_view_lab[:,:,0]  ,w_light), 0, 255);
+                tag_img_view_lab[:, :, 0] = np.clip(np.multiply(tag_img_view_lab[:,:,0]  ,w_light), 0, 255)
 
                 if np.random.uniform(0, 1, 1)[0] > 1.7:
                     tag_img_view_lab[:, :,0] = add_spot_light(tag_img_view_lab[:,:,0][..., np.newaxis])

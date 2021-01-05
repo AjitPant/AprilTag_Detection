@@ -41,7 +41,7 @@ mutex = Lock()
 
 cnt = [0,0,0,0]
 def reduce_to_tags(img,  corners_collection, bytecode_collection,familycode_collection, filename, args):
-    pad = 40
+    pad = 80
     for j,(corners, bytecode, code) in enumerate(zip(corners_collection, bytecode_collection, familycode_collection)):
             h, status = cv2.findHomography(
                 np.array(corners), np.array([[pad, pad], [pad, 224-pad], [224-pad, 224-pad], [224-pad, pad]]))
@@ -160,7 +160,7 @@ def app():
 
     mx_files = 100
 
-    file_list = sorted(list(os.listdir(directory))[1*mx_files:2*mx_files])
+    file_list = sorted(list(os.listdir(directory))[0*mx_files:2*mx_files])
 
     '''
     pass the task function, followed by the parameters to processors

@@ -17,13 +17,15 @@ from torchvision import transforms, datasets, models
 
 
 import torchvision
-resnet = torchvision.models.resnet.resnet50(pretrained=True)
 
+def loss_bit(input, target):
+    return ((nn.Sigmoid()(input)>0.5).long()!=target.long()).reshape(16, -1).sum(dim = 1)
+lis = []
 class Resnet(pl.LightningModule):
     def __init__(self, hparams):
         super(Resnet, self).__init__()
         self.hparams = hparams
-        self.model_ft = models.resnet18(pretrained=True)
+        self.model_ft = models.resnet18()
         self.num_ftrs = self.model_ft.fc.in_features
         self.model_ft.fc = nn.Linear(self.num_ftrs, 500)
         self.H = 10
@@ -48,7 +50,14 @@ class Resnet(pl.LightningModule):
         x, y = batch
 
         y_hat = self.forward(x)
-        loss = F.binary_cross_entropy_with_logits(y_hat, y)
+
+        loss = F.binary_cross_entropy_with_logits(y_hat, y)*0
+
+        bb = loss_bit(y_hat,y)
+        with open("out.csv", "a") as f:
+            for x in bb:
+                f.write(str(x.item()) + '\n')
+
 
         return {'loss': loss}
 
@@ -57,6 +66,7 @@ class Resnet(pl.LightningModule):
 
         y_hat = self.forward(x)
         loss = F.binary_cross_entropy_with_logits(y_hat, y)
+        # print("loss_bit", loss_bit(y_hat, y))
 
 
         return {'val_loss': loss}
@@ -67,7 +77,7 @@ class Resnet(pl.LightningModule):
         return {'val_loss': avg_loss, 'log': tensorboard_logs}
 
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
+        optimizer = torch.optim.Adam(self.parameters(), lr=4e-3)
         return [optimizer]
 
     def __dataloader(self):
