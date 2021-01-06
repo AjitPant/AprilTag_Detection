@@ -289,6 +289,10 @@ def main(args):
         net_unet.to(args.device)
         net_unet.eval()
 
+
+        input_sample = torch.randn((1,3, 1024, 1024))
+        net_unet.to_onnx("model_unet.onnx", input_sample, export_params=True, opset_version = 11)
+
         net_bytecode = Resnet.load_from_checkpoint(args.checkpoint_bit)
         net_bytecode.freeze()
         net_bytecode.to(args.device)
