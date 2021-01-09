@@ -62,7 +62,7 @@ if __name__ == '__main__':
     parent_parser.add_argument('--log_dir', default='/raid/apant_ma/AprilTag-Detection/AprilTag_Detection/detection/training/lightning_logs')
     parent_parser.add_argument('--checkpoint', default=None)
     parent_parser.add_argument('--batch_size', type=int, default=1)
-    parent_parser.add_argument('--learning_rate', type=float, default=12*4*4e-4)
+    parent_parser.add_argument('--learning_rate', type=float, default=2*4*4e-4)
     parser = Unet.add_model_specific_args(parent_parser)
     hparams = parser.parse_args()
 

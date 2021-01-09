@@ -41,7 +41,7 @@ mutex = Lock()
 
 cnt = [0,0,0,0]
 def reduce_to_tags(img,  corners_collection, bytecode_collection,familycode_collection, filename, args):
-    pad = 40
+    pad = 80
     for j,(corners, bytecode, code) in enumerate(zip(corners_collection, bytecode_collection, familycode_collection)):
             h, status = cv2.findHomography(
                 np.array(corners), np.array([[pad, pad], [pad, 224-pad], [224-pad, 224-pad], [224-pad, pad]]))
@@ -117,12 +117,12 @@ def app():
     parser.add_argument(
         '--out_folder',
         type=str,
-        default='/raid/apant_ma/AprilTag-Detection/AprilTag_Detection/DatasetGeneration/./out7',
+        default='/raid/apant_ma/AprilTag-Detection/AprilTag_Detection/DatasetGeneration/dataset/36h11-2',
         help='Output folder which contains dataset')
     parser.add_argument(
         '--family',
         type=str,
-        default=TAG41h12,
+        default=TAG36h11,
         help='April tag family.')
     parser.add_argument(
         '--size',
@@ -158,9 +158,9 @@ def app():
 
     n_processors = 1
 
-    mx_files = 100
+    mx_files = 500
 
-    file_list = sorted(list(os.listdir(directory))[1*mx_files:2*mx_files])
+    file_list = sorted(list(os.listdir(directory))[0*mx_files:1*mx_files])
 
     '''
     pass the task function, followed by the parameters to processors

@@ -1,4 +1,5 @@
 import os, glob, cv2
+from math import exp
 import pickle
 
 from PIL import Image
@@ -146,10 +147,16 @@ class DirDataset(Dataset):
 
         mask[0].fill(0)
 
-        d = 2
+        d = 4
 
         for point in keypoints:
-           mask[0][max(0, int(point[1]) -d): min(img.shape[0], int(point[1])+d+1), max(0, int(point[0]) -d): min(img.shape[1], int(point[0])+d+1)] = 255
+            for x in range(max(0, int(point[1])-d),min(img.shape[0], int(point[1])+d+1)):
+                for y in range(max(0, int(point[0])-d),min(img.shape[1], int(point[0])+d+1)):
+                    dist = exp(-(( point[0] - y) *(point[0] - y)  + (point[1] - x) *(point[1] - x))/8)
+
+                    mask[0][x][y] = 255*dist
+                   # mask[0][max(0, int(point[1]) -d): min(img.shape[0], int(point[1])+d+1), max(0, int(point[0]) -d): min(img.shape[1], int(point[0])+d+1)] = 255 / ( dist)
+
 
 
 
@@ -165,7 +172,7 @@ class DirDataset(Dataset):
         # cv2.waitKey(0)
 
         mask = torch.FloatTensor(mask)
-        mask = ((mask / 255)).float()
+        mask = ((mask / 255.0)).float()
 
         img = Image.fromarray(img.astype(np.uint8))
 
