@@ -188,4 +188,4 @@ class DirDataset(Dataset):
 
         return (
             img,
-            mask)
+            (mask, keypoints))
