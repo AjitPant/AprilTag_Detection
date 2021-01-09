@@ -127,7 +127,7 @@ def app():
     parser.add_argument(
         '--size',
         type=int,
-        default=512+256,
+        default=512,
         help='Size of April tag images in pixels.')
     parser.add_argument(
        '--mx_tags',
@@ -156,11 +156,11 @@ def app():
     directory = os.fsencode(args.img_folder)
     i = 0
 
-    n_processors = 1
+    n_processors = 7
 
-    mx_files = 100
+    mx_files = 1000
 
-    file_list = sorted(list(os.listdir(directory))[0*mx_files:2*mx_files])
+    file_list = sorted(list(os.listdir(directory))[0*mx_files:1*mx_files])
 
     '''
     pass the task function, followed by the parameters to processors

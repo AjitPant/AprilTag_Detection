@@ -141,9 +141,9 @@ class Unet(LightningModule):
         super().__init__()
 
         num_classes: int = 1
-        num_layers: int = 5
+        num_layers: int = 6
         features_start: int = 16
-        bilinear: bool = True
+        bilinear: bool = False
 
         self.hparams = hparams
         self.wt = 1
@@ -179,7 +179,7 @@ class Unet(LightningModule):
             xi.append([layer_seg(xi[-1][0]), layer_corner(xi[-1][1])])
         # Up path
         for i, (layer_seg, layer_corner) in enumerate(zip(self.layers_segmentation[self.num_layers:-1], self.layers_corners[self.num_layers:-1])):
-            xi[-1] = [layer_seg(xi[-1][0], xi[-2 - i][0]), layer_corner(xi[-1][1], xi[-2-i][1])]
+            xi.append( [layer_seg(xi[-1][0], xi[-2 - 2*i][0]), layer_corner(xi[-1][1], xi[-2-2*i][1])])
         return torch.stack([self.layers_segmentation[-1](xi[-1][0]), self.layers_corners[-1](xi[-1][1])], dim = 1).squeeze(2);
     def training_step(self, batch, batch_nb):
         x, y = batch
