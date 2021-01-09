@@ -117,12 +117,12 @@ def app():
     parser.add_argument(
         '--out_folder',
         type=str,
-        default='/raid/apant_ma/AprilTag-Detection/AprilTag_Detection/DatasetGeneration/./out7',
+        default='/raid/apant_ma/AprilTag-Detection/AprilTag_Detection/DatasetGeneration/dataset/36h11-2',
         help='Output folder which contains dataset')
     parser.add_argument(
         '--family',
         type=str,
-        default=TAG41h12,
+        default=TAG36h11,
         help='April tag family.')
     parser.add_argument(
         '--size',
@@ -158,7 +158,7 @@ def app():
 
     n_processors = 7
 
-    mx_files = 1000
+    mx_files = 500
 
     file_list = sorted(list(os.listdir(directory))[0*mx_files:1*mx_files])
 

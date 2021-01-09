@@ -34,7 +34,7 @@ class backgroundOverlayer(object):
         #It attemps to generate as many tags as possible till the upper_limit tags_to_overlay, but sometimes two might overlap it will just remove the later one
 
         for tag in range(tags_to_overlay):
-            index = random.randrange(len(self.generator))
+            index = random.randrange(min(300,len(self.generator)))
 
             result = self.generator[index]
 
