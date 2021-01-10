@@ -125,21 +125,19 @@ def dist(pred, real):
 def RegressionLoss( heatmap, keypoints):
     loss = torch.zeros([1], dtype=heatmap.dtype, device=heatmap.device)
     d = 3
-    for ind,points in enumerate(keypoints):
+    for ind,points in enumerate([keypoints]):
         for point in points:
             sm = torch.zeros([1], dtype=heatmap.dtype, device=heatmap.device)
             wt_sm_x = torch.zeros([1], dtype=heatmap.dtype, device=heatmap.device)
             wt_sm_y = torch.zeros([1], dtype=heatmap.dtype, device=heatmap.device)
-            for x in range(max(0, int(point[1])-d),min(1024, int(point[1])+d+1)):
+   #         slice= heatmap[ind][ range(max(0, int(point[1])-d),min(1024, int(point[1])+d+1))][for y in range(max(0, int(point[0])-d),min(1024, int(point[0])+d+1))]
 
-                            for y in range(max(0, int(point[0])-d),min(1024, int(point[0])+d+1)):
-                                wt_sm_x += heatmap[ind][x][y] * x
-                                wt_sm_y += heatmap[ind][x][y] * y
+            # calculate x,y coordinate of center
+            cX = wt_sm_x / ( sm + 1e-5)
+            cY = wt_sm_y / ( sm + 1e-5)
 
-                                sm += heatmap[ind][x][y]
-
-            x_pred = wt_xm_x / ( sm + 1e-5)
-            y_pred = wt_xm_y / ( sm + 1e-5)
+            x_pred = cX + x
+            y_pred = cY +y
 
             loss += dist((y_pred, x_pred), point)
 
@@ -178,10 +176,10 @@ class Unet(LightningModule):
         self.wt = 1
 
         self.loss_func = nn.BCEWithLogitsLoss(pos_weight=torch.Tensor([1.0]))
-        self.loss_func2 = nn.BCEWithLogitsLoss(pos_weight=torch.Tensor([1.0]))
+        self.loss_func2 = nn.BCEWithLogitsLoss(pos_weight=torch.Tensor([10.0]))
         #self.val_func = FocalLoss(alpha=2, gamma=2)
         # self.val_func = dice_loss
-        self.dist_loss = RegressionLoss
+        self.dist_loss = nn.MSELoss()
         self.val_func = dice_loss
 
         self.num_layers = num_layers
@@ -214,7 +212,7 @@ class Unet(LightningModule):
             xi.append( [layer_seg(xi[-1][0], xi[-2 - 2*i][0]), layer_corner(xi[-1][1], xi[-2-2*i][1])])
         return torch.stack([self.layers_segmentation[-1](xi[-1][0]), self.layers_corners[-1](xi[-1][1])], dim = 1).squeeze(2);
     def training_step(self, batch, batch_nb):
-        x, (y, keypoints) = batch
+        x, y  = batch
 
 
         y_hat = self.forward(x)
@@ -222,11 +220,35 @@ class Unet(LightningModule):
 
         loss = self.loss_func(y_hat[:,1], y[:,1])
         #dice = self.val_func(y_hat[:,0], y[:,0]) #+ self.val_func(y_hat[:,1], y[:,1]) + self.loss_func(y_hat, y)
-        dice = self.loss_func2(y_hat[:,0], y[:,0])
+        dice = self.loss_func2(y_hat[:,0], y[:,2])
 
-        dist = self.dist_loss(y_hat[:,0], keypoints)
+        dist = self.dist_loss(nn.Sigmoid()(y_hat[:,0]), y[:,2])
 
-        t_loss = loss  +  dice + 10 * dist
+        t_loss = loss  +  dice + dist
+#
+#        y_hat = (nn.Sigmoid()(y_hat[:,0]) - 0.5).unsqueeze(1)
+#        x = ( x+ y_hat) /2
+#        y_hat = self.forward(x)
+#
+#        loss = self.loss_func(y_hat[:,1], y[:,1])
+#        #dice = self.val_func(y_hat[:,0], y[:,0]) #+ self.val_func(y_hat[:,1], y[:,1]) + self.loss_func(y_hat, y)
+#        dice = self.loss_func2(y_hat[:,0], y[:,0])
+#
+#        dist = self.dist_loss(nn.Sigmoid()(y_hat[:,0]), y[:,0])
+
+        #t_loss = loss  +  dice + dist + t_loss
+
+        # y_hat = (nn.Sigmoid()(y_hat[:,0]) - 0.5).unsqueeze(1)
+        # x = ( x+ y_hat) /2
+        # y_hat = self.forward(x)
+
+        # loss = self.loss_func(y_hat[:,1], y[:,1])
+        # #dice = self.val_func(y_hat[:,0], y[:,0]) #+ self.val_func(y_hat[:,1], y[:,1]) + self.loss_func(y_hat, y)
+        # dice = self.loss_func2(y_hat[:,0], y[:,0])
+
+        # dist = self.dist_loss(nn.Sigmoid()(y_hat[:,0]), y[:,0])
+
+        # t_loss = loss  +  100*dice + 100*dist + t_loss
 
         self.log('bce', loss, on_step=True, on_epoch=False, prog_bar=True)
         self.log('dice', dice, on_step=True, on_epoch=False, prog_bar=True)
@@ -237,14 +259,13 @@ class Unet(LightningModule):
 
         return t_loss
     def training_epoch_end(self, training_step_outputs):
-        self.wt *= 0.95
-
+        self.wt *= 0.95 
     def validation_step(self, batch, batch_nb):
-        x, (y, keypoints) = batch
+        x, y = batch
 
         y_hat = self.forward(x)
 
-        loss = self.loss_func(y_hat, y)
+        loss = 0#self.loss_func(y_hat, y)
 
         self.log('val_loss', loss, on_step=False, on_epoch=True, prog_bar=False)
 
