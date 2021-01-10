@@ -42,7 +42,7 @@ def reduce_to_tags(net, img, response_1, response_2,  args):
     mask_corners = response_2
     segregates = []
 
-    mask_corners =  (mask_corners* 255).astype(np.uint8)
+    mask_corners =  (np.around(mask_corners* 255)).astype(np.uint8)
 
     mask_corners[mask_corners < 10] = 0
 
@@ -159,7 +159,7 @@ def reduce_to_tags(net, img, response_1, response_2,  args):
 
         for p in hull:
             for x in segregates:
-                if( (x[0]-p[0][0])**2 + (x[1] - p[0][1])**2<=10):
+                if( (x[0]-p[0][0])**2 + (x[1] - p[0][1])**2<=1):
                     t_segregates.append(x)
 
         segregates = t_segregates
@@ -271,6 +271,20 @@ def predict(net, img, device='cuda', threshold=0.5, kernel =1024, stride =512):
                     o = net(patch)
 
 
+                    hold = o
+                    o = nn.Sigmoid()(o[:,0].unsqueeze(1)) - 0.5
+                    patch = (patch + o) / 2
+                    o = net(patch)
+                    hold =o
+
+                   # o = nn.Sigmoid()(o[:,0].unsqueeze(1)) - 0.5
+                   # patch = (patch + o) / 2
+                   # o = net(patch)
+                   # hold +=o
+                   # hold /=3
+                    o = hold
+
+
                     probs = torch.sigmoid(o)
                     probs = probs.squeeze(0)
                     mask_patch = probs
@@ -343,7 +357,7 @@ def main(args):
 
             corners_pkl = []
             with open(pkl_str, "rb") as f:
-                corners_pkl = pickle.load(f)
+                corners_pkl = np.array(pickle.load(f)).reshape((-1,2)).tolist()
             print(corners)
             print(corners_pkl)
             dst_sm = 0.0
@@ -353,7 +367,9 @@ def main(args):
                     mn = (1000000000000, (0,0))
                     for ic in corners_pkl:
                         print(c, ic)
-                        mn = min(mn, ((ic[0]/2 - c[0] -0.5  )* (ic[0]/2 - c[0] -0.5  ) + (ic[1]/2 - c[1] -0.5 )* (ic[1]/2 - c[1]  -0.5), (ic[0]/2 -c[0] , ic[1]/2 - c[1]) ))
+                        diff = 0.0
+                        mn = min(mn, ((ic[0]/2 - c[0] -diff  )* (ic[0]/2 - c[0] -diff ) + (ic[1]/2 - c[1] -diff )* (ic[1]/2 - c[1]  -diff), (ic[0]/2 -c[0] , ic[1]/2 - c[1]) ))
+                        mn = min(mn, ((ic[0] - c[0] -diff  )* (ic[0] - c[0] -diff  ) + (ic[1] - c[1] -diff )* (ic[1] - c[1]-diff ), (ic[0]/2 -c[0] , ic[1]/2 - c[1]) ))
 
                     dst_sm += math.sqrt(mn[0])
                     # with open("file_corners_unet_diff.csv", "a") as f:

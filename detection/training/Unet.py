@@ -170,7 +170,7 @@ class Unet(LightningModule):
         super().__init__()
 
         num_classes: int = 1
-        num_layers: int = 2
+        num_layers: int = 5
         features_start: int = 16
         bilinear: bool = False
 

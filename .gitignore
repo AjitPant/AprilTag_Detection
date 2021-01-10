@@ -144,6 +144,10 @@ dmypy.json
 **/*.png
 **/*.ckpt
 **/*.out
+**/*.onnx
+**/*.csv
+**/*.pb
+**/*.ps
 
 **/back
 **/model_nightly
