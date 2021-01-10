@@ -7,6 +7,7 @@ import numpy as np
 
 import torch
 from torch.utils.data import Dataset
+import copy
 from torchvision import transforms
 import albumentations as A
 
@@ -145,6 +146,9 @@ class DirDataset(Dataset):
 
         keypoints = augmented['keypoints']
 
+
+        mask.append(copy.deepcopy(mask[0]))
+
         mask[0].fill(0)
 
         d = 4
@@ -157,6 +161,16 @@ class DirDataset(Dataset):
                     mask[0][x][y] = 255*dist
                    # mask[0][max(0, int(point[1]) -d): min(img.shape[0], int(point[1])+d+1), max(0, int(point[0]) -d): min(img.shape[1], int(point[0])+d+1)] = 255 / ( dist)
 
+        mask[2].fill(0)
+
+        d = 16
+
+        for point in keypoints:
+            for x in range(max(0, int(point[1])-d),min(img.shape[0], int(point[1])+d+1)):
+                for y in range(max(0, int(point[0])-d),min(img.shape[1], int(point[0])+d+1)):
+                    dist = exp(-(( point[0] - y) *(point[0] - y)  + (point[1] - x) *(point[1] - x))/128)
+
+                    mask[2][x][y] = 255*dist
 
 
 
@@ -188,4 +202,4 @@ class DirDataset(Dataset):
 
         return (
             img,
-            (mask, keypoints))
+            mask)
