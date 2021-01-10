@@ -17,7 +17,7 @@ class Rotation3DAugmentation(object):
                  rx_lim_deg=(0., 0.),
                  ry_lim_deg=(0., 0.),
                  rz_lim_deg=(0., 0.),
-                 prob=0.8,
+                 prob=1.0,
                  debug=False):
         '''
         :param rx_lim_deg: tuple(float, float) range of rotation around x axis in degree
@@ -40,9 +40,9 @@ class Rotation3DAugmentation(object):
         self.prob = prob
         self.debug = debug
 
-    def __call__(self, src_image, src_corners):
+    def __call__(self, src_image, src_corners, src_grid_corners):
         if np.random.uniform(0, 1, 1)[0] >= self.prob:
-            return src_image, src_corners
+            return src_image, src_corners, src_grid_corners
 
         height, width = src_image.shape[:2]
         rx = 0
@@ -89,10 +89,34 @@ class Rotation3DAugmentation(object):
             dst_pts_img[1] = dst_pts_img[1] / dst_pts_img[2]
             dst_corners[ind] = dst_pts_img[:2].T
 
+
+
+        dst_grid_corners = np.zeros_like(src_grid_corners)
+
+
+
+        src_pts_img = np.ones( (4, src_grid_corners.shape[0]), dtype=np.float32)
+        src_pts_img[0, :] = src_grid_corners[ :, 0]
+        src_pts_img[1, :] = src_grid_corners[ :, 1]
+
+        src_pts_cam = np.matmul(np.linalg.inv(camera_matrix), src_pts_img)
+        src_pts_pln = np.matmul(np.linalg.inv(camera_T_plane), src_pts_cam)
+        dst_pts_pln = np.matmul(np.linalg.inv(src_R_dst), src_pts_pln)
+        dst_pts_cam = np.matmul(camera_T_plane, dst_pts_pln)
+        dst_pts_img = np.matmul(camera_matrix, dst_pts_cam)
+
+        dst_pts_img[0] = dst_pts_img[0] / dst_pts_img[2]
+        dst_pts_img[1] = dst_pts_img[1] / dst_pts_img[2]
+        dst_grid_corners = dst_pts_img[:2].T
+
+
+        dst_grid_corners.reshape((-1,2))
+
+
         dst_H_src = cv2.getPerspectiveTransform(src_corners[0] * width, dst_corners[0] * width)
         dst_image = cv2.warpPerspective(src_image, dst_H_src, (width, height))
 
-        return dst_image,  dst_corners
+        return dst_image,  dst_corners, dst_grid_corners
 
 
 
@@ -128,9 +152,7 @@ class ScaleAugmentation(object):
         self.prob = prob
         self.debug = debug
 
-    def __call__(self, src_image, src_corners):
-        # if np.random.uniform(0, 1, 1)[0] >= self.prob:
-        #     return src_image, src_corners
+    def __call__(self, src_image, src_corners, src_grid_corners):
 
 
 
@@ -141,9 +163,9 @@ class ScaleAugmentation(object):
         if np.random.uniform(0, 1, 1)[0] >= self.prob:
             scalex = np.random.uniform(self.scalex_lim[0], 0.5, 1)[0]
             scaley = np.random.uniform(self.scaley_lim[0], 0.5, 1)[0]
-# GAussian
 
         dst_image = cv2.resize(src_image, interpolation = cv2.INTER_AREA,dsize = None, fx= scalex, fy = scaley)
         dst_corners = src_corners
+        dst_grid_corners = src_grid_corners
 
-        return dst_image,  dst_corners
+        return dst_image,  dst_corners, dst_grid_corners

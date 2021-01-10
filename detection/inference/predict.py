@@ -338,7 +338,6 @@ def main(args):
         for img_str, pkl_str in zip(img_list, pkl_list):
             im_size = 1024
             img = Image.open(img_str).convert('RGB')
-            ind = img_str[-7:-4]
 
 
 

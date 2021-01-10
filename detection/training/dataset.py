@@ -24,11 +24,8 @@ class DirDataset(Dataset):
         self.aug = A.Compose([
 
             A.OneOf([
-                A.RandomSizedCrop(min_max_height=(original_height//8, original_height//2),
-                                  height=original_height//8, width=original_width//8, p=1.0),
 
-                A.RandomSizedCrop(min_max_height=(original_height//8, original_height//1),
-                                  height=original_height//16, width=original_width//16, p=1.0),
+
 
                 A.RandomSizedCrop(min_max_height=(original_height//8, original_height//4),
                                   height=original_height//4, width=original_width//8, p=1.0),
@@ -126,6 +123,7 @@ class DirDataset(Dataset):
         mask_files = [os.path.join(self.mask_dir, idx + '_0.png'),
                       os.path.join(self.mask_dir, idx + '_5.png'), ]
         keypoints_file = os.path.join(self.img_dir, idx + '.pkl')
+        keypoints2_file = os.path.join(self.img_dir, idx + '_grid.pkl')
 
         assert all([os.path.exists(path) for path in img_files]), 'image files missing'
         assert all([os.path.exists(path) for path in mask_files]), 'mask files missing'
@@ -137,8 +135,10 @@ class DirDataset(Dataset):
 
         with open(keypoints_file, "rb") as f:
             keypoints = np.array(pickle.load(f)).reshape((-1,2)).tolist()
+        with open(keypoints2_file, "rb") as f:
+            keypoints2 = np.array(pickle.load(f)).reshape((-1,2)).tolist()
 
-        augmented = self.aug(image=img, mask0=mask[0], mask1=mask[1], keypoints = keypoints)
+        augmented = self.aug(image=img, mask0=mask[0], mask1=mask[1], keypoints = keypoints, keypoints2 = keypoints2)
         img = augmented['image']
 
         mask[1] = augmented['mask1']
@@ -147,7 +147,7 @@ class DirDataset(Dataset):
         keypoints = augmented['keypoints']
 
 
-        mask.append(copy.deepcopy(mask[0]))
+        #mask.append(copy.deepcopy(mask[0]))
 
         mask[0].fill(0)
 
@@ -161,16 +161,15 @@ class DirDataset(Dataset):
                     mask[0][x][y] = 255*dist
                    # mask[0][max(0, int(point[1]) -d): min(img.shape[0], int(point[1])+d+1), max(0, int(point[0]) -d): min(img.shape[1], int(point[0])+d+1)] = 255 / ( dist)
 
-        mask[2].fill(0)
+        mask[1].fill(0)
 
-        d = 16
+        d = 2
 
-        for point in keypoints:
+        for point in keypoints2:
             for x in range(max(0, int(point[1])-d),min(img.shape[0], int(point[1])+d+1)):
                 for y in range(max(0, int(point[0])-d),min(img.shape[1], int(point[0])+d+1)):
-                    dist = exp(-(( point[0] - y) *(point[0] - y)  + (point[1] - x) *(point[1] - x))/128)
-
-                    mask[2][x][y] = 255*dist
+                    dist = exp(-(( point[0] - y) *(point[0] - y)  + (point[1] - x) *(point[1] - x))/1)
+                    mask[1][x][y] = 255*dist
 
 
 

@@ -43,9 +43,9 @@ cnt = [0,0,0,0]
 def reduce_to_tags(img,  corners_collection, bytecode_collection,familycode_collection, filename, args):
     pad = 80
     for j,(corners, bytecode, code) in enumerate(zip(corners_collection, bytecode_collection, familycode_collection)):
-            h, status = cv2.findHomography(
+            h, _ = cv2.findHomography(
                 np.array(corners), np.array([[pad, pad], [pad, 224-pad], [224-pad, 224-pad], [224-pad, pad]]))
-            height, width, channels = img.shape
+
             im1Reg = cv2.warpPerspective(img, h, (224, 224))
 
 
@@ -73,7 +73,7 @@ def augment_and_save(file, overlayer, args):
                 exit()
 
             img = cv2.resize(img, (512*4, 512*4))
-            img_out, response_1, response_2, response_3 ,response_id, corners_collection,bytecode_collection, familycode_collection= overlayer(img)
+            img_out, response_1, response_2 , corners_collection,bytecode_collection, familycode_collection, grid_corners_collection = overlayer(img)
 
             img_out = cv2.resize(img_out, (1024, 1024), interpolation = cv2.INTER_AREA)
             response_1 = cv2.resize(response_1, (1024, 1024), interpolation = cv2.INTER_AREA)
@@ -82,6 +82,7 @@ def augment_and_save(file, overlayer, args):
 
 
             corners_collection = [ [x/2 for x in y ]  for y in corners_collection]
+            grid_corners_collection = [ [x/2 for x in y ]  for y in grid_corners_collection]
 
             reduce_to_tags(img_out, corners_collection,bytecode_collection,familycode_collection, filename, args)
 
@@ -94,6 +95,9 @@ def augment_and_save(file, overlayer, args):
                     j) + '_'+str(k) + '.png'), response_2[:, :, k])
             with open(os.path.join(args.out_folder, 'img',  filename[:-4] + "_" + str(j)   + '.pkl'), 'wb') as f:
                 pickle.dump(corners_collection, f)
+            with open(os.path.join(args.out_folder, 'img',  filename[:-4] + "_" + str(j)   + '_grid.pkl'), 'wb') as f:
+                pickle.dump(grid_corners_collection, f)
+
 
 
 def run_multiprocessing(func, file_list, overlayer, args, n_processors):
@@ -154,11 +158,10 @@ def app():
     print(len(generator))
     overlayer = backgroundOverlayer(generator, args.mx_tags)
     directory = os.fsencode(args.img_folder)
-    i = 0
 
-    n_processors = 7
+    n_processors = 1
 
-    mx_files = 500
+    mx_files = 100
 
     file_list = sorted(list(os.listdir(directory))[0*mx_files:1*mx_files])
 
@@ -166,7 +169,7 @@ def app():
     pass the task function, followed by the parameters to processors
     '''
     start = time.time()
-    out = run_multiprocessing(
+    _ = run_multiprocessing(
         augment_and_save, file_list, overlayer, args, n_processors)
     print("Mutiprocessing time: {}secs\n".format((time.time()-start)))
 

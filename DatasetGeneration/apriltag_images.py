@@ -116,23 +116,35 @@ class AprilTagImages(object):
         return images, bytecodes,familycode
 
     def corners(self):
-
         if self.family == TAG36h11:
             lo = 0.1
             hi = 0.9
+
+            x=np.linspace(0, 10, 11)
+            y=np.linspace(0, 10, 11)
+            xx,yy=np.meshgrid(x,y)
+            coordinates=(np.array((xx.ravel(), yy.ravel())).T.astype(np.float32)/10)
+
+
         elif self.family == TAG41h12:
             lo = 2/9.0
             hi = 7/9.0
+
         elif self.family == TAG52h13:
             lo = 0.1
             hi = 0.9
+
         elif self.family == TAG16h5:
             lo = 1/8
             hi = 7/8
+
         else:
             assert False, 'Unknown April tag family!' + self.family
+
+
         return np.array([[[lo, lo], [hi, lo], [hi, hi], [lo, hi]],
-                         [[0.00, 0.00], [1-0.00, 0.00], [1-0.00, 1-0.00], [0.00, 1-0.00]]], dtype=np.float32)
+                         [[0.00, 0.00], [1-0.00, 0.00], [1-0.00, 1-0.00], [0.00, 1-0.00]]], dtype=np.float32), \
+               coordinates
 
     def image(self, idx):
                     assert idx < len(self.images), 'Not a valid index.'

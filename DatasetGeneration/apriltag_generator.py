@@ -36,17 +36,29 @@ class AprilTagGenerator(object):
         src_image, src_bytecode, src_familycode = self.apriltags.image(idx)
         src_image = np.pad(src_image, pad_width=pad_width, mode='constant', constant_values=255)
         src_width = src_image.shape[1]
-        src_corners_uv = (self.apriltags.corners() * self.apriltags.size + pad_width) / src_width
+
+        src_corners_uv, src_grid_corners_uv = (self.apriltags.corners() )
+
+
+        src_corners_uv = (src_corners_uv * self.apriltags.size + pad_width) / src_width
+
+        src_grid_corners_uv = (src_grid_corners_uv * self.apriltags.size + pad_width) / src_width
+
+
+
 
         # Warped April Tag image and its normalized uv corners.
-        dst_image,  dst_corners_uv = self.rotate3d(src_image, src_corners_uv)
-        dst_image, dst_corners_uv = self.scale(dst_image, dst_corners_uv)
+        dst_image,  dst_corners_uv, dst_grid_corners_uv = self.rotate3d(src_image, src_corners_uv, src_grid_corners_uv)
+        dst_image, dst_corners_uv, dst_grid_corners_uv = self.scale(dst_image, dst_corners_uv, dst_grid_corners_uv)
 
         dst_height, dst_width = dst_image.shape[:2]
         mask = np.zeros((dst_height, dst_width), dtype=np.uint8)
 
         polygon = (dst_corners_uv[1] * dst_image.shape[::-1]).astype(np.int32)
         cv2.fillPoly(mask, np.array([polygon]), 255)
+
+
+
 
         return dict(
             image=dst_image,
@@ -55,7 +67,8 @@ class AprilTagGenerator(object):
             mask=mask,
             response=self.get_response(dst_corners_uv[0], dst_width, dst_height)[0],
             response_in_use=self.get_response(dst_corners_uv[0], dst_width, dst_height)[1],
-            corners_uv=dst_corners_uv[0]*np.array([dst_width, dst_height]))
+            corners_uv=dst_corners_uv[0]*np.array([dst_width, dst_height]),
+            grid_corners_uv = dst_grid_corners_uv* np.array([dst_width,dst_height]))
 
 
     @staticmethod
@@ -74,7 +87,6 @@ class AprilTagGenerator(object):
         response_in_use = np.zeros((height, width, num_feats + 1), dtype=np.uint8)
         response_in_use[:, :, -1] = 255
 
-        d1 = 1
         d2 = 1
         for i in range(num_feats):
             assert 0.0 <= corners[i, 0] < 1.0, 'corner x outside of image border!'
