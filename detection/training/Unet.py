@@ -120,8 +120,8 @@ class Unet(LightningModule):
         super().__init__()
 
         num_classes: int = 2
-        num_layers: int = 5
-        features_start: int = 16
+        num_layers: int = 10
+        features_start: int = 1
         bilinear: bool = False
 
         self.hparams = hparams

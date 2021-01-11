@@ -31,26 +31,20 @@ def order_points(pts):
 	return np.array(out, dtype="float32")
 
 
-def reduce_to_tags(net, img, response_1, response_2,  args):
+def reduce_to_tags(net, img, mask_segmentation, mask_corners,  args):
     global inf_ind
     global class_ind
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    detected = False
 
 
-    mask_segmentation = response_1
-    mask_corners = response_2
     segregates = []
 
     mask_corners =  (np.around(mask_corners* 255)).astype(np.uint8)
 
-    mask_corners[mask_corners < 10] = 0
+    mask_corners[mask_corners < 30] = 0
 
     print(np.unique(mask_corners))
 
-    # kernel = np.ones((5,5),np.uint8)
-    # mask_segmentation = cv2.erode(mask_segmentation,kernel,iterations = 2)
-
+    mask_segmentation[:] = 1
 
     cv2.namedWindow('mask_segmentation', cv2.WINDOW_NORMAL)
     cv2.imshow("mask_segmentation", mask_segmentation*255)
@@ -99,6 +93,7 @@ def reduce_to_tags(net, img, response_1, response_2,  args):
     cv2.imshow('drawDetectedMarkers', img_make_clone)
     cv2.waitKey(cv_time_wait)
 
+    detected = False
 
     return_list_corner_id = []
 
@@ -197,7 +192,7 @@ def reduce_to_tags(net, img, response_1, response_2,  args):
         im2Reg = (ds.preprocess(im2Reg))
         with open("bytecode_36h11.pkl", "rb") as f:
             bytecode_36h11 = pickle.load(f)
-        out = net((im2Reg.unsqueeze(0).to(device), torch.tensor(bytecode_36h11).to(device)))
+        out = net((im2Reg.unsqueeze(0).to(args.device), torch.tensor(bytecode_36h11).to(args.device)))
 
 
 
@@ -272,16 +267,16 @@ def predict(net, img, device='cuda', threshold=0.5, kernel =1024, stride =512):
 
 
                     hold = o
-                    o = nn.Sigmoid()(o[:,0].unsqueeze(1)) - 0.5
-                    patch = (patch + o) / 2
-                    o = net(patch)
-                    hold =o
+                    #o = nn.Sigmoid()(o[:,0].unsqueeze(1)) - 0.5
+                    #patch = (patch + o) / 2
+                    #o = net(patch)
+                    #hold =o
 
-                   # o = nn.Sigmoid()(o[:,0].unsqueeze(1)) - 0.5
-                   # patch = (patch + o) / 2
-                   # o = net(patch)
-                   # hold +=o
-                   # hold /=3
+                    #o = nn.Sigmoid()(o[:,0].unsqueeze(1)) - 0.5
+                    #patch = (patch + o) / 2
+                    #o = net(patch)
+                    #hold +=o
+                    #hold /=3
                     o = hold
 
 
@@ -292,7 +287,7 @@ def predict(net, img, device='cuda', threshold=0.5, kernel =1024, stride =512):
                     mask[start_row:start_row+kernel, start_col:start_col+kernel] = torch.max(mask[start_row:start_row+kernel, start_col:start_col+kernel], mask_patch[:, :patch_height, :patch_width])
 
         mask_ret= mask.cpu().numpy()
-        return (mask_ret[0],mask_ret[1] > threshold )
+        return (mask_ret[1],mask_ret[1] > threshold )
 
 
 
@@ -376,8 +371,8 @@ def main(args):
 
                 dst_sm /= 4
                 print(dst_sm)
-                # with open("file_corners_unet.csv", "a") as f:
-                #      f.write(str(ind)+","+ str(dst_sm) + " \n")
+                # with open("file_corners_cll.csv", "a") as f:
+                #      f.write(str("12")+","+ str(dst_sm) + " \n")
 
 
 
