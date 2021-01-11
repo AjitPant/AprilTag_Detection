@@ -176,7 +176,7 @@ class Unet(LightningModule):
         y_hat = self.forward(x)
 
 
-        loss = self.loss_func2((y_hat[:,1]), y[:,1])
+        loss = self.loss_func((y_hat[:,1]), y[:,1])
        # dice2 = self.val_func(y_hat[:,0], y[:,0]) #+ self.val_func(y_hat[:,1], y[:,1]) + self.loss_func(y_hat, y)
         #dice = self.loss_func2(y_hat[:,0], y[:,0])
 

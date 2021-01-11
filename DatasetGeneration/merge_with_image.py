@@ -121,7 +121,7 @@ def app():
     parser.add_argument(
         '--out_folder',
         type=str,
-        default='/raid/apant_ma/AprilTag-Detection/AprilTag_Detection/DatasetGeneration/dataset/36h11',
+        default='/raid/apant_ma/AprilTag-Detection/AprilTag_Detection/DatasetGeneration/dataset/36h11-2',
         help='Output folder which contains dataset')
     parser.add_argument(
         '--family',
@@ -131,7 +131,7 @@ def app():
     parser.add_argument(
         '--size',
         type=int,
-        default=512,
+        default=1024,
         help='Size of April tag images in pixels.')
     parser.add_argument(
        '--mx_tags',
@@ -148,11 +148,11 @@ def app():
     generator = AprilTagGenerator(root=args.root,
                                   family=args.family,
                                   size=args.size,
-                                  rx_lim_deg=(-50, 50),
-                                  ry_lim_deg=(-50, 50),
+                                  rx_lim_deg=(-10, 10),
+                                  ry_lim_deg=(-10, 10),
                                   rz_lim_deg=(-180, 180),
-                                  scalex_lim=(1.0/128, 1.0),
-                                  scaley_lim=(1.0/128, 1.0),
+                                  scalex_lim=(1.0/8, 1.0),
+                                  scaley_lim=(1.0/8, 1.0),
                                   )
 
     print(len(generator))
@@ -161,7 +161,7 @@ def app():
 
     n_processors = 32
 
-    mx_files = 30000
+    mx_files = 2000
 
     file_list = sorted(list(os.listdir(directory))[0*mx_files:1*mx_files])
 

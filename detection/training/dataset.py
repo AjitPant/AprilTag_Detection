@@ -43,7 +43,7 @@ class DirDataset(Dataset):
                A.RandomSizedCrop(min_max_height=(original_height//1.5, original_height//1),
                                   height=original_height//2, width=original_width//2, p=1.0),
 
-            ], p=0.6),
+            ], p=0.0),
 
             A.PadIfNeeded(min_height=original_height, min_width=original_width, p = 1.0, border_mode=cv2.BORDER_CONSTANT, value = 0),
             A.OneOf([
