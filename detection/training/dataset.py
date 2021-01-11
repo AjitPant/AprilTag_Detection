@@ -170,14 +170,14 @@ class DirDataset(Dataset):
   #                  mask[1][x][y] = 255 #*dist
 
              mask[1][max(0, int(point[1]) -d): min(img.shape[0], int(point[1])+d+1), max(0, int(point[0]) -d): min(img.shape[1], int(point[0])+d+1)] = 255 #/ ( dist)
-        # cv2.namedWindow("mask[0]", cv2.WINDOW_NORMAL)
-        # cv2.imshow("mask[0]", mask[0])
-        # cv2.namedWindow("mask[1]", cv2.WINDOW_NORMAL)
-        # cv2.imshow("mask[1]", mask[1])
+        cv2.namedWindow("mask[0]", cv2.WINDOW_NORMAL)
+        cv2.imshow("mask[0]", mask[0])
+        cv2.namedWindow("mask[1]", cv2.WINDOW_NORMAL)
+        cv2.imshow("mask[1]", mask[1])
 
-        # cv2.namedWindow("img", cv2.WINDOW_NORMAL)
-        # cv2.imshow("img", img)
-        # cv2.waitKey(0)
+        cv2.namedWindow("img", cv2.WINDOW_NORMAL)
+        cv2.imshow("img", img)
+        cv2.waitKey(0)
 
         mask = torch.FloatTensor(mask)
         mask = ((mask / 255.0)).float()

@@ -40,7 +40,7 @@ def reduce_to_tags(net, img, mask_segmentation, mask_corners,  args):
 
     mask_corners =  (np.around(mask_corners* 255)).astype(np.uint8)
 
-    mask_corners[mask_corners < 30] = 0
+    mask_corners[mask_corners < 00] = 0
 
     print(np.unique(mask_corners))
 
