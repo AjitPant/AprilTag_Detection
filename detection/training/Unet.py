@@ -141,11 +141,15 @@ class Unet(LightningModule):
 
         feats = features_start
         for _ in range(num_layers - 1):
-            layers.append(Down(feats, feats * 2))
+            fest2 = min(feats, 64 * 4*1000)
+            fest3 = min(2*feats, 64 * 4*1000)
+            layers.append(Down(fest2, fest3))
             feats *= 2
 
         for _ in range(num_layers - 1):
-            layers.append(Up(feats, feats // 2, bilinear))
+            fest2 = min(feats, 64 * 4*1000)
+            fest3 = min(feats//2, 64 *4*1000)
+            layers.append(Up(fest2, fest3, bilinear))
             feats //= 2
 
 
@@ -172,20 +176,21 @@ class Unet(LightningModule):
         y_hat = self.forward(x)
 
 
-        loss = self.loss_func(y_hat[:,1], y[:,1])
-        #dice = self.val_func(y_hat[:,0], y[:,0]) #+ self.val_func(y_hat[:,1], y[:,1]) + self.loss_func(y_hat, y)
-        dice = self.loss_func2(y_hat[:,0], y[:,0])
+        loss = self.loss_func2((y_hat[:,1]), y[:,1])
+       # dice2 = self.val_func(y_hat[:,0], y[:,0]) #+ self.val_func(y_hat[:,1], y[:,1]) + self.loss_func(y_hat, y)
+        #dice = self.loss_func2(y_hat[:,0], y[:,0])
 
-        dist = self.dist_loss(nn.Sigmoid()(y_hat[:,0]), y[:,0])
+       # dist = self.dist_loss(nn.Sigmoid()(y_hat[:,0]), y[:,0])
 
-        t_loss = loss  +  dice + dist
+        t_loss = (loss)
 
 
         self.log('bce', loss, on_step=True, on_epoch=False, prog_bar=True)
-        self.log('dice', dice, on_step=True, on_epoch=False, prog_bar=True)
-        self.log('dist', dist, on_step=True, on_epoch=False, prog_bar=True)
+        #self.log('dice', dice, on_step=True, on_epoch=False, prog_bar=True)
+        #self.log('dice2', dice2, on_step=True, on_epoch=False, prog_bar=True)
+        #self.log('dist', dist, on_step=True, on_epoch=False, prog_bar=True)
         self.log('t_loss', t_loss, on_step=True, on_epoch=False, prog_bar=False)
-        self.log('wt', self.wt, on_step=False, on_epoch=True, prog_bar=False)
+        #self.log('wt', self.wt, on_step=False, on_epoch=True, prog_bar=False)
 
 
         return t_loss
