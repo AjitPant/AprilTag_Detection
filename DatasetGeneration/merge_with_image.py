@@ -121,7 +121,7 @@ def app():
     parser.add_argument(
         '--out_folder',
         type=str,
-        default='/raid/apant_ma/AprilTag-Detection/AprilTag_Detection/DatasetGeneration/dataset/36h11-2',
+        default='/raid/apant_ma/AprilTag-Detection/AprilTag_Detection/DatasetGeneration/dataset/36h11',
         help='Output folder which contains dataset')
     parser.add_argument(
         '--family',
@@ -159,9 +159,9 @@ def app():
     overlayer = backgroundOverlayer(generator, args.mx_tags)
     directory = os.fsencode(args.img_folder)
 
-    n_processors = 1
+    n_processors = 32
 
-    mx_files = 100
+    mx_files = 30000
 
     file_list = sorted(list(os.listdir(directory))[0*mx_files:1*mx_files])
 
