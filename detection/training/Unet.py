@@ -1,5 +1,6 @@
 from argparse import ArgumentParser
 import copy
+from deeplab import Res_Deeplab
 
 import torch
 import torch.nn as nn
@@ -134,38 +135,12 @@ class Unet(LightningModule):
         self.dist_loss = nn.MSELoss()
         self.val_func = dice_loss
 
-        self.num_layers = num_layers
+        self.model = Res_Deeplab(2)
 
 
-        layers = [DoubleConv(3, features_start)]
-
-        feats = features_start
-        for _ in range(num_layers - 1):
-            fest2 = min(feats, 64 * 4*1000)
-            fest3 = min(2*feats, 64 * 4*1000)
-            layers.append(Down(fest2, fest3))
-            feats *= 2
-
-        for _ in range(num_layers - 1):
-            fest2 = min(feats, 64 * 4*1000)
-            fest3 = min(feats//2, 64 *4*1000)
-            layers.append(Up(fest2, fest3, bilinear))
-            feats //= 2
-
-
-        layers.append(nn.Conv2d(feats, int(num_classes), kernel_size=1))
-
-        self.layers_corners = nn.ModuleList(copy.deepcopy(layers))
 
     def forward(self, x):
-        xi = [self.layers_corners[0](x)]
-        # Down path
-        for layer_corner in self.layers_corners[1:self.num_layers]:
-            xi.append( layer_corner(xi[-1]))
-        # Up path
-        for i, ( layer_corner) in enumerate( self.layers_corners[self.num_layers:-1]):
-            xi.append( layer_corner(xi[-1], xi[-2-2*i]))
-        return self.layers_corners[-1](xi[-1]).squeeze(2)
+        return self.model(x)
 
 
 
