@@ -287,7 +287,7 @@ def predict(net, img, device='cuda', threshold=0.5, kernel =1024, stride =512):
                     mask[start_row:start_row+kernel, start_col:start_col+kernel] = torch.max(mask[start_row:start_row+kernel, start_col:start_col+kernel], mask_patch[:, :patch_height, :patch_width])
 
         mask_ret= mask.cpu().numpy()
-        return (mask_ret[1],mask_ret[1] > threshold )
+        return (mask_ret[0],mask_ret[1] > threshold )
 
 
 

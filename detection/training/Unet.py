@@ -1,6 +1,6 @@
 from argparse import ArgumentParser
 import copy
-from deeplab import Res_Deeplab
+from torchvision.models.segmentation import deeplabv3_resnet101
 
 import torch
 import torch.nn as nn
@@ -135,7 +135,7 @@ class Unet(LightningModule):
         self.dist_loss = nn.MSELoss()
         self.val_func = dice_loss
 
-        self.model = Res_Deeplab(2)
+        self.model = deeplabv3_resnet101(pretrained=True, progress=False, num_classes=2)
 
 
 
