@@ -14,6 +14,7 @@ from pytorch_lightning.profiler import AdvancedProfiler
 def main(hparams):
     print(hparams.dataset)
     model = Unet(hparams)
+    model = Unet.load_from_checkpoint(hparams.checkpoint,dataset = hparams.dataset)
 
     model.train()
 
@@ -39,10 +40,14 @@ def main(hparams):
 
     trainer = Trainer(
         num_nodes=1,
-        max_epochs = 80,
+        max_epochs = 8000,
+#        gradient_clip_val = 0.5,
         accelerator=hparams.accelerator,
         gpus=hparams.n_gpu,
-        checkpoint_callback=checkpoint_callback, resume_from_checkpoint=hparams.checkpoint,
+        checkpoint_callback=checkpoint_callback, \
+        #resume_from_checkpoint=hparams.checkpoint,
+#        precision = 16,
+        sync_batchnorm = True,
         accumulate_grad_batches=1,
        benchmark=True,
         default_root_dir='/raid/apant_ma/AprilTag-Detection/AprilTag_Detection/detection/training/lightning_logs',

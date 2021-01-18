@@ -34,7 +34,7 @@ class backgroundOverlayer(object):
         #It attemps to generate as many tags as possible till the upper_limit tags_to_overlay, but sometimes two might overlap it will just remove the later one
 
         for tag in range(tags_to_overlay):
-            index = random.randrange(min(300,len(self.generator)))
+            index = random.randrange(min(1,len(self.generator)))
 
             result = self.generator[index]
 
@@ -112,7 +112,7 @@ class backgroundOverlayer(object):
             if  not cv2.bitwise_and(out_response_view, mask).any():
 
 
-                if np.random.uniform(0, 1, 1)[0] > 0.8:
+                if np.random.uniform(0, 1, 1)[0] > 1.8:
                     blurred_background_img_view = cv2.GaussianBlur(background_img_view, (5, 5), 0)
                     contours, hierarchy = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
                     tmp_mask = np.zeros(background_img_view.shape, dtype = np.uint8)

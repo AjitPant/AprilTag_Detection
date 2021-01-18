@@ -41,11 +41,21 @@ class Unet(LightningModule):
         self.hparams = hparams
 
 
-        self.model = torchvision.models.resnet18(pretrained=False, progress=True, num_classes = num_classes)
-
+        self.model = torchvision.models.resnet50(pretrained=False, progress=True, num_classes =100)
+        self.model_ft_2 = nn.Sequential(
+                nn.Linear(100 ,100),
+                nn.BatchNorm1d(100),
+                nn.ReLU(),
+                nn.Linear(100, 100),
+                nn.BatchNorm1d(100),
+                nn.ReLU(),
+                nn.Linear(100, num_classes),
+        )
 
     def forward(self, x):
-        return self.model(x).reshape((-1, 4, 2))
+        hidden = self.model(x).reshape((-1, 100))
+
+        return self.model_ft_2(nn.ReLU()(hidden)).reshape((-1,4,2))
 
     def training_step(self, batch, batch_nb):
         x, y  = batch
@@ -54,9 +64,8 @@ class Unet(LightningModule):
         y_hat = self.forward(x)
 
 
+
         loss =       l2(y, y_hat)
-
-
 
         return loss
 
@@ -65,7 +74,8 @@ class Unet(LightningModule):
 
         y_hat = self.forward(x)
 
-        loss = 0#self.loss_func(y_hat, y)
+        loss =       l2(y, y_hat)
+
 
         self.log('val_loss', loss, on_step=False, on_epoch=True, prog_bar=False)
 

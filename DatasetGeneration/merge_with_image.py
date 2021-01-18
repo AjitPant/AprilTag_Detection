@@ -72,16 +72,16 @@ def augment_and_save(file, overlayer, args):
                 print("Failed to load the {}. Make sure it exists.", path)
                 exit()
 
-            img = cv2.resize(img, (512*4, 512*4))
+            img = cv2.resize(img, (512*2, 512*2))
             img_out, response_1, response_2, response_3 ,response_id, corners_collection,bytecode_collection, familycode_collection= overlayer(img)
 
-            img_out = cv2.resize(img_out, (1024, 1024), interpolation = cv2.INTER_AREA)
-            response_1 = cv2.resize(response_1, (1024, 1024), interpolation = cv2.INTER_AREA)
-            response_2 = cv2.resize(response_2, (1024, 1024), interpolation = cv2.INTER_AREA)
+#            img_out = cv2.resize(img_out, (1024, 1024), interpolation = cv2.INTER_AREA)
+#            response_1 = cv2.resize(response_1, (1024, 1024), interpolation = cv2.INTER_AREA)
+#            response_2 = cv2.resize(response_2, (1024, 1024), interpolation = cv2.INTER_AREA)
 
 
 
-            corners_collection = [ [x/2 for x in y ]  for y in corners_collection]
+#            corners_collection = [ [x/2 for x in y ]  for y in corners_collection]
 
             reduce_to_tags(img_out, corners_collection,bytecode_collection,familycode_collection, filename, args)
 
@@ -117,7 +117,7 @@ def app():
     parser.add_argument(
         '--out_folder',
         type=str,
-        default='/raid/apant_ma/AprilTag-Detection/AprilTag_Detection/DatasetGeneration/dataset/36h11-2',
+        default='/raid/apant_ma/AprilTag-Detection/AprilTag_Detection/DatasetGeneration/dataset/36h11-7',
         help='Output folder which contains dataset')
     parser.add_argument(
         '--family',
@@ -127,7 +127,7 @@ def app():
     parser.add_argument(
         '--size',
         type=int,
-        default=400,
+        default=320,
         help='Size of April tag images in pixels.')
     parser.add_argument(
        '--mx_tags',
@@ -156,9 +156,9 @@ def app():
     directory = os.fsencode(args.img_folder)
     i = 0
 
-    n_processors = 7
+    n_processors =32
 
-    mx_files = 100
+    mx_files = 5000
 
     file_list = sorted(list(os.listdir(directory))[0*mx_files:1*mx_files])
 
