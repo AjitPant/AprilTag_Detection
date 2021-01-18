@@ -127,7 +127,7 @@ def app():
     parser.add_argument(
         '--size',
         type=int,
-        default=512,
+        default=400,
         help='Size of April tag images in pixels.')
     parser.add_argument(
        '--mx_tags',
@@ -158,7 +158,7 @@ def app():
 
     n_processors = 7
 
-    mx_files = 500
+    mx_files = 100
 
     file_list = sorted(list(os.listdir(directory))[0*mx_files:1*mx_files])
 

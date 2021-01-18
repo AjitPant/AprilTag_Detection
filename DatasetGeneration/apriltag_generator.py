@@ -36,6 +36,7 @@ class AprilTagGenerator(object):
         src_image, src_bytecode, src_familycode = self.apriltags.image(idx)
         src_image = np.pad(src_image, pad_width=pad_width, mode='constant', constant_values=255)
         src_width = src_image.shape[1]
+
         src_corners_uv = (self.apriltags.corners() * self.apriltags.size + pad_width) / src_width
 
         # Warped April Tag image and its normalized uv corners.
@@ -43,10 +44,13 @@ class AprilTagGenerator(object):
         dst_image, dst_corners_uv = self.scale(dst_image, dst_corners_uv)
 
         dst_height, dst_width = dst_image.shape[:2]
+
+
         mask = np.zeros((dst_height, dst_width), dtype=np.uint8)
 
         polygon = (dst_corners_uv[1] * dst_image.shape[::-1]).astype(np.int32)
         cv2.fillPoly(mask, np.array([polygon]), 255)
+
 
         return dict(
             image=dst_image,

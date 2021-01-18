@@ -48,6 +48,8 @@ class backgroundOverlayer(object):
             bytecode = result["bytecode"]
             familycode = result["familycode"]
 
+
+
             # mask = np.maximum(mask, tag_img)
             _, mask = cv2.threshold(mask, 254, 255, cv2.THRESH_BINARY)
             mask_inv = cv2.bitwise_not(mask)
