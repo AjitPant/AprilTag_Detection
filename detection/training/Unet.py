@@ -176,7 +176,7 @@ class Unet(LightningModule):
         self.wt = 1
 
         self.loss_func = nn.BCEWithLogitsLoss(pos_weight=torch.Tensor([1.0]))
-        self.loss_func2 = nn.BCEWithLogitsLoss(pos_weight=torch.Tensor([10.0]))
+        self.loss_func2 = nn.BCEWithLogitsLoss(pos_weight=torch.Tensor([1.0]))
         #self.val_func = FocalLoss(alpha=2, gamma=2)
         # self.val_func = dice_loss
         self.dist_loss = nn.MSELoss()
@@ -220,11 +220,11 @@ class Unet(LightningModule):
 
         loss = self.loss_func(y_hat[:,1], y[:,1])
         #dice = self.val_func(y_hat[:,0], y[:,0]) #+ self.val_func(y_hat[:,1], y[:,1]) + self.loss_func(y_hat, y)
-        dice = self.loss_func2(y_hat[:,0], y[:,2])
+        dice = self.loss_func2(y_hat[:,0], y[:,0])
 
-        dist = self.dist_loss(nn.Sigmoid()(y_hat[:,0]), y[:,2])
+        dist = self.dist_loss((y_hat[:,0]), y[:,0])
 
-        t_loss = loss  +  dice + dist
+        t_loss = loss  +  dist 
 #
 #        y_hat = (nn.Sigmoid()(y_hat[:,0]) - 0.5).unsqueeze(1)
 #        x = ( x+ y_hat) /2

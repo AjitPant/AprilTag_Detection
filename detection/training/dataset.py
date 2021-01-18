@@ -24,14 +24,7 @@ class DirDataset(Dataset):
         self.aug = A.Compose([
 
             A.OneOf([
-                A.RandomSizedCrop(min_max_height=(original_height//8, original_height//2),
-                                  height=original_height//8, width=original_width//8, p=1.0),
 
-                A.RandomSizedCrop(min_max_height=(original_height//8, original_height//1),
-                                  height=original_height//16, width=original_width//16, p=1.0),
-
-                A.RandomSizedCrop(min_max_height=(original_height//8, original_height//4),
-                                  height=original_height//4, width=original_width//8, p=1.0),
 
 
                 A.RandomSizedCrop(min_max_height=(original_height//4, original_height//1),
@@ -87,7 +80,7 @@ class DirDataset(Dataset):
                 A.RGBShift(p=0.5),
                 A.RandomGamma(p=0.8)
             ], p=0.4),
-        ], p=0.9,
+        ], p=0.0,
             additional_targets={
             'image': 'image',
 
@@ -147,11 +140,9 @@ class DirDataset(Dataset):
         keypoints = augmented['keypoints']
 
 
-        mask.append(copy.deepcopy(mask[0]))
-
         mask[0].fill(0)
 
-        d = 4
+        d = 16
 
         for point in keypoints:
             for x in range(max(0, int(point[1])-d),min(img.shape[0], int(point[1])+d+1)):
@@ -160,20 +151,6 @@ class DirDataset(Dataset):
 
                     mask[0][x][y] = 255*dist
                    # mask[0][max(0, int(point[1]) -d): min(img.shape[0], int(point[1])+d+1), max(0, int(point[0]) -d): min(img.shape[1], int(point[0])+d+1)] = 255 / ( dist)
-
-        mask[2].fill(0)
-
-        d = 16
-
-        for point in keypoints:
-            for x in range(max(0, int(point[1])-d),min(img.shape[0], int(point[1])+d+1)):
-                for y in range(max(0, int(point[0])-d),min(img.shape[1], int(point[0])+d+1)):
-                    dist = exp(-(( point[0] - y) *(point[0] - y)  + (point[1] - x) *(point[1] - x))/128)
-
-                    mask[2][x][y] = 255*dist
-
-
-
 
 
         # cv2.namedWindow("mask[0]", cv2.WINDOW_NORMAL)
