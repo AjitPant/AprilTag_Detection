@@ -117,7 +117,7 @@ def app():
     parser.add_argument(
         '--out_folder',
         type=str,
-        default='/raid/apant_ma/AprilTag-Detection/AprilTag_Detection/DatasetGeneration/dataset/36h11-5',
+        default='/raid/apant_ma/AprilTag-Detection/AprilTag_Detection/DatasetGeneration/dataset/36h11-7',
         help='Output folder which contains dataset')
     parser.add_argument(
         '--family',
@@ -156,9 +156,9 @@ def app():
     directory = os.fsencode(args.img_folder)
     i = 0
 
-    n_processors = 7
+    n_processors =32
 
-    mx_files = 50000
+    mx_files = 5000
 
     file_list = sorted(list(os.listdir(directory))[0*mx_files:1*mx_files])
 

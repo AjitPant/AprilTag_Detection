@@ -145,6 +145,7 @@ class DirDataset(Dataset):
 
 
 
+        keypoints = torch.tensor(keypoints).reshape((4,2))
 
 
 

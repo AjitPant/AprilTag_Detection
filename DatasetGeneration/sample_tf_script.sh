@@ -38,7 +38,6 @@ nvidia-smi
 #nvidia-docker run  --rm  -v /raid//apant_ma/:/raid/apant_ma pytorchlightning-mod/pytorch-lightning:base-conda-py3.8-torch1.7 python -c "import shutil;shutil.rmtree('/raid/apant_ma/AprilTag-Detection/AprilTag_Detection/DatasetGeneration/out')"
 
 
-#nvidia-docker run  --rm  -v /raid//apant_ma/:/raid/apant_ma pytorchlightning-mod/pytorch-lightning:base-conda-py3.8-torch1.7 python -c "import shutil;shutil.rmtree('/raid/apant_ma/AprilTag-Detection/AprilTag_Detection/DatasetGeneration/__pycache__')"
 nvidia-docker run  --ipc=host -t ${USER_TTY} --name $SLURM_JOB_ID --user $(id -u):$(id -g)  --rm -v /raid//apant_ma/:/raid/apant_ma pytorchlightning-mod/pytorch-lightning:base-conda-py3.8-torch1.8 python /raid/apant_ma/AprilTag-Detection/AprilTag_Detection/DatasetGeneration/merge_with_image.py 
 
 

@@ -16,7 +16,7 @@ import torchvision
 
 
 def l2(y, y_hat):
-    return (y[0] - y_hat[0])*(y[0] - y_hat[0]) + (y[1] - y_hat[1])*(y[1]- y_hat[1])
+    return nn.MSELoss()(y_hat, y)
 
 
 class Unet(LightningModule):
@@ -37,15 +37,25 @@ class Unet(LightningModule):
     ):
         super().__init__()
 
-        num_classes: int = 4
+        num_classes: int = 8
         self.hparams = hparams
 
 
-        self.model = torchvision.models.resnet18(pretrained=False, progress=True, num_classes = num_classes)
-
+        self.model = torchvision.models.resnet50(pretrained=False, progress=True, num_classes =100)
+        self.model_ft_2 = nn.Sequential(
+                nn.Linear(100 ,100),
+                nn.BatchNorm1d(100),
+                nn.ReLU(),
+                nn.Linear(100, 100),
+                nn.BatchNorm1d(100),
+                nn.ReLU(),
+                nn.Linear(100, num_classes),
+        )
 
     def forward(self, x):
-        return self.model(x)
+        hidden = self.model(x).reshape((-1, 100))
+
+        return self.model_ft_2(nn.ReLU()(hidden)).reshape((-1,4,2))
 
     def training_step(self, batch, batch_nb):
         x, y  = batch
@@ -54,12 +64,8 @@ class Unet(LightningModule):
         y_hat = self.forward(x)
 
 
-        loss =       l2(y[0], y_hat[0])+\
-                     l2(y[1], y_hat[1])+\
-                     l2(y[2], y_hat[2])+\
-                     l2(y[3], y_hat[3])
 
-
+        loss =       l2(y, y_hat)
 
         return loss
 
@@ -68,7 +74,8 @@ class Unet(LightningModule):
 
         y_hat = self.forward(x)
 
-        loss = 0#self.loss_func(y_hat, y)
+        loss =       l2(y, y_hat)
+
 
         self.log('val_loss', loss, on_step=False, on_epoch=True, prog_bar=False)
 
