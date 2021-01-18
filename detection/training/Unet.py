@@ -259,7 +259,7 @@ class Unet(LightningModule):
 
         return t_loss
     def training_epoch_end(self, training_step_outputs):
-        self.wt *= 0.95 
+        self.wt *= 0.95
     def validation_step(self, batch, batch_nb):
         x, y = batch
 

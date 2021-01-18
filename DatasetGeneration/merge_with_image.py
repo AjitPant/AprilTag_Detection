@@ -127,7 +127,7 @@ def app():
     parser.add_argument(
         '--size',
         type=int,
-        default= 320,
+        default=320,
         help='Size of April tag images in pixels.')
     parser.add_argument(
        '--mx_tags',

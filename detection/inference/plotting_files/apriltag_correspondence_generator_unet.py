@@ -20,8 +20,8 @@ def process(args):
 
 
 
-    markerLength = 2.4 # Here, measurement unit is centimetre.
-    markerSeparation = 1.2   # Here, measurement unit is centimetre.
+    markerLength = 0.8 # Here, measurement unit is centimetre.
+    markerSeparation = 0.3   # Here, measurement unit is centimetre.
 
     dictionary = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_APRILTAG_36h11)
 

@@ -5,6 +5,7 @@ from matplotlib import pyplot as plt
 from torch import nn
 from argparse import ArgumentParser
 import glob
+import os
 import cv2
 import numpy as np
 
@@ -30,6 +31,7 @@ def order_points(pts):
 	out = sorted(coords, key=lambda coord: (-135 - math.degrees(math.atan2(*tuple(map(operator.sub, coord, center))[::-1]))) % 360)
 	return np.array(out, dtype="float32")
 
+global_output_corners, global_output_id, global_output_cnter = [], [], []
 
 def reduce_to_tags(net, img, response_1, response_2,  args):
     global inf_ind
@@ -39,10 +41,12 @@ def reduce_to_tags(net, img, response_1, response_2,  args):
 
 
     mask_segmentation = response_1
+    mask_segmentation[:] = 255
     mask_corners = response_2
     segregates = []
 
-    mask_corners =  (np.around(mask_corners* 255)).astype(np.uint8)
+
+    mask_corners =  ((mask_corners* 255))
 
     mask_corners[mask_corners < 10] = 0
 
@@ -56,9 +60,9 @@ def reduce_to_tags(net, img, response_1, response_2,  args):
     cv2.imshow("mask_segmentation", mask_segmentation*255)
     cv2.waitKey(cv_time_wait)
 
-    mask_real_corners = np.zeros(mask_corners.shape[1:], dtype=np.uint8)
+    mask_real_corners = np.zeros(mask_corners.shape[1:], dtype=np.float32)
 
-    mask_real_corners = (mask_corners).astype(np.uint8)
+    mask_real_corners = (mask_corners)
     print(np.unique(mask_real_corners))
 
     cv2.namedWindow('mask_garbage', cv2.WINDOW_NORMAL)
@@ -91,7 +95,7 @@ def reduce_to_tags(net, img, response_1, response_2,  args):
     if markerIds is not None:
         class_ind+=markerIds.shape[0]
 
-
+    output_corners, output_id, output_cnter = [], [], 0
     img_make_clone = img.copy()
     # cv2.aruco.drawDetectedMarkers(img_make_clone, markerCorners, markerIds)
 
@@ -109,16 +113,15 @@ def reduce_to_tags(net, img, response_1, response_2,  args):
         internal_mask = np.zeros(mask_real_corners.shape, dtype=np.uint8)
 
 
-        cv2.drawContours(internal_mask, contours, ind, 255, -1)
+        cv2.drawContours(internal_mask, contours, ind, 1, -1)
         kernel = np.ones((5,5),np.uint8)
         internal_mask = cv2.dilate(internal_mask,kernel,iterations = 1)
 
 
-        internal_mask = cv2.bitwise_and(
-            internal_mask, mask_real_corners.astype(np.uint8))
+        internal_mask = internal_mask* mask_real_corners
 
         internal_contours, _ = cv2.findContours(
-            internal_mask, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+            internal_mask.astype(np.uint8), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
 
         for inner_ind in range(len(internal_contours)):
             internal_internal_mask = np.zeros(
@@ -128,12 +131,11 @@ def reduce_to_tags(net, img, response_1, response_2,  args):
 
 
 
-            internal_internal_mask = cv2.bitwise_and(
-                internal_internal_mask, mask_real_corners.astype(np.uint8))
+            internal_internal_mask = internal_internal_mask* mask_real_corners
 
             cv2.namedWindow("internal_internal_mask", cv2.WINDOW_NORMAL)
             cv2.imshow("internal_internal_mask", internal_internal_mask)
-            cv2.waitKey(0)
+            cv2.waitKey(cv_time_wait)
 
             #find the center of contours
             M = cv2.moments(internal_contours[inner_ind])
@@ -159,12 +161,13 @@ def reduce_to_tags(net, img, response_1, response_2,  args):
 
         for p in hull:
             for x in segregates:
-                if( (x[0]-p[0][0])**2 + (x[1] - p[0][1])**2<=1):
+                if( (x[0]-p[0][0])**2 + (x[1] - p[0][1])**2<=10):
                     t_segregates.append(x)
 
         segregates = t_segregates
 
-
+        if len(segregates) <4:
+            continue
 
         segregates = order_points(segregates)
 
@@ -238,6 +241,50 @@ def reduce_to_tags(net, img, response_1, response_2,  args):
 
         detected = True
 
+
+
+
+        if markerCorners is not None and markerIds is not None:
+            for corners, id in zip(markerCorners, markerIds):
+                corner = corners[0]
+
+
+                corner_out = corner
+
+                real_corner_list = []
+                fake_corner_list = []
+                for corner in corner:
+                    min_dist = 10.0
+                    closest = []
+                    for inner_corner in corner_list:
+                        dist = (inner_corner[0] - corner[0])**2 + (inner_corner[1] - corner[1])**2
+                        dist = math.sqrt(dist);
+                        if(dist<min_dist):
+                            closest = inner_corner
+                            min_dist = dist;
+
+                    if(closest != []):
+                        real_corner_list.append(closest);
+                        fake_corner_list.append(corner);
+
+                if len(real_corner_list) == 4:
+                    output_cnter+=1
+                    output_corners.append(real_corner_list)
+                    # output_corners.append(fake_corner_list)
+                    output_id.append(id)
+
+
+
+
+
+
+        print(corner_list)
+
+
+    global_output_cnter.append(output_cnter)
+    global_output_corners.append(output_corners)
+    global_output_id.append(output_id)
+
     print(markerCorners)
 
 
@@ -246,7 +293,7 @@ def reduce_to_tags(net, img, response_1, response_2,  args):
     return return_list_corner_id, detected
 
 
-def predict(net, img, device='cuda', threshold=0.5, kernel =1024, stride =512):
+def predict(net, img, device='cuda', threshold=0.5, kernel =1024, stride =1024):
     with torch.no_grad():
         ds = DirDataset('', '')
         _img = (ds.preprocess(img))
@@ -270,22 +317,23 @@ def predict(net, img, device='cuda', threshold=0.5, kernel =1024, stride =512):
                     patch = m(patch)
                     o = net(patch)
 
+                    # hold = o
+                    # o = nn.Sigmoid()(o[:,0].unsqueeze(1)) - 0.5
+                    # patch = (patch + o) / 2
+                    # o = net(patch)
+                    # hold =o
 
-                    hold = o
-                    o = nn.Sigmoid()(o[:,0].unsqueeze(1)) - 0.5
-                    patch = (patch + o) / 2
-                    o = net(patch)
-                    hold =o
-
-                   # o = nn.Sigmoid()(o[:,0].unsqueeze(1)) - 0.5
-                   # patch = (patch + o) / 2
-                   # o = net(patch)
-                   # hold +=o
-                   # hold /=3
-                    o = hold
+                    # hold = o
+                    # o = nn.Sigmoid()(o[:,0].unsqueeze(1)) - 0.5
+                    # patch = (patch + o) / 2
+                    # o = net(patch)
+                    # hold =o
 
 
-                    probs = torch.sigmoid(o)
+
+                    probs = o
+                    # probs = torch.sigmoid(o)
+
                     probs = probs.squeeze(0)
                     mask_patch = probs
 
@@ -332,8 +380,8 @@ def main(args):
         net_bytecode.to(args.device)
         net_bytecode.eval()
 
-        img_list = sorted([str(item) for item in glob.glob(args.img + "*.jpg")])
-        pkl_list = sorted([str(item) for item in glob.glob(args.img + "*.pkl")])
+        img_list = sorted([str(item) for item in glob.glob(args.img + "*.jpg")])[:1000]
+        pkl_list = sorted([str(item) for item in glob.glob(args.img + "*.pkl")])[:1000]
 
         for img_str, pkl_str in zip(img_list, pkl_list):
             im_size = 1024
@@ -348,6 +396,15 @@ def main(args):
             # Convert RGB to BGR
             open_cv_image = open_cv_image[:, :, ::-1].copy()
 
+            # size = 15
+
+            # # generating the kernel
+            # kernel_motion_blur = np.zeros((size, size))
+            # kernel_motion_blur[int((size-1)/2), :] = np.ones(size)
+            # kernel_motion_blur = kernel_motion_blur / size
+
+            # # applying the kernel to the input image
+            # open_cv_image = cv2.filter2D(open_cv_image, -1, kernel_motion_blur)
 
 
             img = Image.fromarray(open_cv_image)
@@ -360,7 +417,7 @@ def main(args):
                 corners_pkl = np.array(pickle.load(f)).reshape((-1,2)).tolist()
             print(corners)
             print(corners_pkl)
-            dst_sm = 0.0
+            dst_sm = 0.00
             if(detected):
 
                 for c in corners[0][:4]:
@@ -381,7 +438,8 @@ def main(args):
                 #      f.write(str(ind)+","+ str(dst_sm) + " \n")
 
 
-
+    with open('outputs/unet_corner_direct.pkl', "wb") as f:
+        pickle.dump((global_output_corners, global_output_id, global_output_cnter, (1024,1024)), f)
 
 
 
@@ -399,7 +457,7 @@ if __name__ == '__main__':
     parent_parser.add_argument('--device', default = "cuda", type = str, required=False, help = "Use GPU or not : cuda or cpu" )
     parent_parser.add_argument('--kernel', default = 1024, type = int , required=False, help = "Image size for one patch to Unet" )
     parent_parser.add_argument('--stride', default =1024, type=int, required=False, help = "Image stride for one patch to Unet" )
-    parent_parser.add_argument('--segmentation_threshold', default = 0.3, type=float, required=False, help = "Threshold for using in segmentation" )
+    parent_parser.add_argument('--segmentation_threshold', default = 0.1, type=float, required=False, help = "Threshold for using in segmentation" )
     parent_parser.add_argument('--corner_threshold', default = 0.1, type = float, required=False, help = "Threshold for using in corner " )
     parent_parser.add_argument('--img', required=True, type = str)
 

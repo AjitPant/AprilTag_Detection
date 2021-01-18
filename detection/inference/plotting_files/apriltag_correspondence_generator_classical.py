@@ -14,7 +14,7 @@ import AprilTagHelper
 
 def process(args):
 
-    files_list = glob.glob(os.path.join(args.image_dir, '*.bmp'))
+    files_list = glob.glob(os.path.join(args.image_dir, '*.jpg'))
     print("Found {} files in {}".format(len(files_list),args.image_dir))
 
     dictionary = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_APRILTAG_36h11)
@@ -30,14 +30,14 @@ def process(args):
     for file_name in tqdm(files_list):
         print("Working on ", file_name)
         image = cv2.imread(file_name)
-        image = cv2.resize(image, (2048, 2048))
+        image = cv2.resize(image, (1024, 1024))
 
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         corners, ids, rejectedImgPoints = cv2.aruco.detectMarkers(gray, dictionary, parameters=detectorParameters)
         if corners is None or ids is None:
             continue
 
-        corners, ids = zip(*[ [corners,_] for _,corners in sorted(zip(ids,corners)) ])
+ #       corners, ids = zip(*[ [corners,_] for _,corners in sorted(zip(ids,corners)) ])
 
 
         extracted_corners.append(corners)
@@ -54,8 +54,8 @@ def process(args):
     if(args.visualize):
         cv2.destroyAllWindows()
 
-    markerLength = 2.4 # Here, measurement unit is centimetre.
-    markerSeparation = 1.2   # Here, measurement unit is centimetre.
+    markerLength = 0.8 # Here, measurement unit is centimetre.
+    markerSeparation = 0.3   # Here, measurement unit is centimetre.
 
     board = cv2.aruco.GridBoard_create(5, 5, markerLength, markerSeparation, dictionary, firstMarker = 300)
 
@@ -83,10 +83,10 @@ def process(args):
     corners = corner
 
 
-    if(args.visualize):
-        plotter = AprilTagHelper.AprilTagPlotter()
-        plotter(objPoints, extracted_ids)
-        plotter(corners ,extracted_ids)
+    # if(args.visualize):
+    #     plotter = AprilTagHelper.AprilTagPlotter()
+    #     plotter(objPoints, extracted_ids)
+    #     plotter(corners ,extracted_ids)
 
     with open("./outputs/classical_detections.pkl","wb") as f:
         pickle.dump((corners, objPoints, gray.shape), f)
