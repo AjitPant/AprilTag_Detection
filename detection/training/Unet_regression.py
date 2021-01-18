@@ -16,7 +16,7 @@ import torchvision
 
 
 def l2(y, y_hat):
-    return (y[0] - y_hat[0])*(y[0] - y_hat[0]) + (y[1] - y_hat[1])*(y[1]- y_hat[1])
+    return nn.MSELoss()(y_hat, y)
 
 
 class Unet(LightningModule):
@@ -37,7 +37,7 @@ class Unet(LightningModule):
     ):
         super().__init__()
 
-        num_classes: int = 4
+        num_classes: int = 8
         self.hparams = hparams
 
 
@@ -45,7 +45,7 @@ class Unet(LightningModule):
 
 
     def forward(self, x):
-        return self.model(x)
+        return self.model(x).reshape((-1, 4, 2))
 
     def training_step(self, batch, batch_nb):
         x, y  = batch
@@ -54,10 +54,7 @@ class Unet(LightningModule):
         y_hat = self.forward(x)
 
 
-        loss =       l2(y[0], y_hat[0])+\
-                     l2(y[1], y_hat[1])+\
-                     l2(y[2], y_hat[2])+\
-                     l2(y[3], y_hat[3])
+        loss =       l2(y, y_hat)
 
 
 
