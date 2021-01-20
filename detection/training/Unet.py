@@ -146,7 +146,12 @@ def RegressionLoss( heatmap, keypoints):
 
 
 
+def dist_loss(y_hat, y):
+     term1 = (y_hat - y)* (y_hat - y)
+     term2 = (100*y + 1)
+     out = term1 * term2
 
+     return torch.sum(out)
 
 
 class Unet(LightningModule):
@@ -168,22 +173,40 @@ class Unet(LightningModule):
         super().__init__()
 
         num_classes: int = 1
-        num_layers: int = 5
+        num_layers: int = 7
         features_start: int = 16
         bilinear: bool = False
 
         self.hparams = hparams
         self.wt = 1
+        self.flag = False
 
         self.loss_func = nn.BCEWithLogitsLoss(pos_weight=torch.Tensor([1.0]))
-        self.loss_func2 = nn.BCEWithLogitsLoss(pos_weight=torch.Tensor([1.0]))
+        self.loss_func2 = nn.BCEWithLogitsLoss(pos_weight=torch.Tensor([10.0]))
         #self.val_func = FocalLoss(alpha=2, gamma=2)
         # self.val_func = dice_loss
-        self.dist_loss = nn.MSELoss()
+        self.dist_loss = dist_loss
         self.val_func = dice_loss
 
         self.num_layers = num_layers
 
+
+        layers = [DoubleConv(3, 2)]
+
+        feats = 2
+        for _ in range(num_layers - 1):
+            layers.append(Down(feats, feats * 2))
+            feats *= 2
+
+        for _ in range(num_layers - 1):
+            layers.append(Up(feats, feats // 2, bilinear))
+            feats //= 2
+
+
+        layers.append(nn.Conv2d(feats, int(num_classes), kernel_size=1))
+
+
+        self.layers_corners = nn.ModuleList(copy.deepcopy(layers))
 
         layers = [DoubleConv(3, features_start)]
 
@@ -200,7 +223,7 @@ class Unet(LightningModule):
         layers.append(nn.Conv2d(feats, int(num_classes), kernel_size=1))
 
         self.layers_segmentation = nn.ModuleList(copy.deepcopy(layers))
-        self.layers_corners = nn.ModuleList(copy.deepcopy(layers))
+
 
     def forward(self, x):
         xi = [[self.layers_segmentation[0](x), self.layers_corners[0](x)]]
@@ -218,13 +241,17 @@ class Unet(LightningModule):
         y_hat = self.forward(x)
 
 
-        loss = self.loss_func(y_hat[:,1], y[:,1])
+        #loss = self.loss_func(y_hat[:,1], y[:,1])
         #dice = self.val_func(y_hat[:,0], y[:,0]) #+ self.val_func(y_hat[:,1], y[:,1]) + self.loss_func(y_hat, y)
-        dice = self.loss_func2(y_hat[:,0], y[:,0])
+        if self.flag:
+            dice = self.loss_func(y_hat[:,0], y[:,0])
+        else:
+            dice = self.loss_func2(y_hat[:,0], y[:,0])
+
 
         dist = self.dist_loss((y_hat[:,0]), y[:,0])
 
-        t_loss = loss  +  dist 
+        t_loss =  dist 
 #
 #        y_hat = (nn.Sigmoid()(y_hat[:,0]) - 0.5).unsqueeze(1)
 #        x = ( x+ y_hat) /2
@@ -249,8 +276,8 @@ class Unet(LightningModule):
         # dist = self.dist_loss(nn.Sigmoid()(y_hat[:,0]), y[:,0])
 
         # t_loss = loss  +  100*dice + 100*dist + t_loss
-
-        self.log('bce', loss, on_step=True, on_epoch=False, prog_bar=True)
+#
+#        self.log('bce', loss, on_step=True, on_epoch=False, prog_bar=True)
         self.log('dice', dice, on_step=True, on_epoch=False, prog_bar=True)
         self.log('dist', dist, on_step=True, on_epoch=False, prog_bar=True)
         self.log('t_loss', t_loss, on_step=True, on_epoch=False, prog_bar=False)

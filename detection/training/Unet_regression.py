@@ -41,25 +41,54 @@ class Unet(LightningModule):
         self.hparams = hparams
 
 
-        self.model = torchvision.models.resnet50(pretrained=False, progress=True, num_classes =100)
+        self.model = torchvision.models.resnet50(pretrained=False, progress=True, num_classes =1000)
         self.model_ft_2 = nn.Sequential(
-                nn.Linear(100 ,100),
-                nn.BatchNorm1d(100),
+                nn.Linear(1000,800),
+                # nn.BatchNorm1d(100),
+                nn.ReLU(),
+                nn.Linear(800, 700),
+                # nn.BatchNorm1d(100),
+                nn.ReLU(),
+                nn.Linear(700, 600),
+                # nn.BatchNorm1d(100),
+                nn.ReLU(),
+                nn.Linear(600, 500),
+                # nn.BatchNorm1d(100),
+                nn.ReLU(),
+                nn.Linear(500, 400),
+                # nn.BatchNorm1d(100),
+                nn.ReLU(),
+                nn.Linear(400, 300),
+                # nn.BatchNorm1d(100),
+                nn.ReLU(),
+                nn.Linear(300, 200),
+                # nn.BatchNorm1d(100),
+                nn.ReLU(),
+                nn.Linear(200, 100),
+                # nn.BatchNorm1d(100),
                 nn.ReLU(),
                 nn.Linear(100, 100),
-                nn.BatchNorm1d(100),
+                # nn.BatchNorm1d(100),
+                nn.ReLU(),
+                nn.Linear(100, 100),
+                # nn.BatchNorm1d(100),
+                nn.ReLU(),
+                nn.Linear(100, 100),
+                # nn.BatchNorm1d(100),
+                nn.ReLU(),
+                nn.Linear(100, 100),
+                # nn.BatchNorm1d(100),
                 nn.ReLU(),
                 nn.Linear(100, num_classes),
         )
 
     def forward(self, x):
-        hidden = self.model(x).reshape((-1, 100))
+        hidden = self.model(x).reshape((-1, 1000))
 
         return self.model_ft_2(nn.ReLU()(hidden)).reshape((-1,4,2))
 
     def training_step(self, batch, batch_nb):
         x, y  = batch
-
 
         y_hat = self.forward(x)
 

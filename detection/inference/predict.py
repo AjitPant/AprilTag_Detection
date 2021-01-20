@@ -127,7 +127,7 @@ def reduce_to_tags(net, img, response_1, response_2,  args):
             internal_internal_mask = np.zeros(
                 mask_real_corners.shape, dtype=np.uint8)
             cv2.drawContours(internal_internal_mask,
-                             internal_contours, inner_ind, 255, -1)
+                             internal_contours, inner_ind, 1, -1)
 
 
 

@@ -27,15 +27,13 @@ class DirDataset(Dataset):
 
 
 
-                A.RandomSizedCrop(min_max_height=(original_height//4, original_height//1),
-                                  height=original_height//4, width=original_width//4, p=1.0),
 
 
                 A.RandomSizedCrop(min_max_height=(original_height//4, original_height//1),
-                                  height=original_height//2, width=original_width//8, p=1.0),
+                                  height=original_height//2, width=original_width//2, p=1.0),
 
                 A.RandomSizedCrop(min_max_height=(original_height//4, original_height//1),
-                                  height=original_height//4, width=original_width//8, p=1.0),
+                                  height=original_height//2, width=original_width//2, p=1.0),
 
 
                A.RandomSizedCrop(min_max_height=(original_height//1.5, original_height//1),
@@ -48,7 +46,7 @@ class DirDataset(Dataset):
                 A.Blur((5,25), p = 0.5),
                 A.MotionBlur((5,25),p =  0.5),
 
-            ], p=0.7),
+            ], p=0.1),
 
             A.OneOf([
                 A.ToGray(),
@@ -70,7 +68,7 @@ class DirDataset(Dataset):
             A.OneOf([
                 A.RandomRain(),
                 A.RandomFog( fog_coef_lower = 0.1, fog_coef_upper = 0.3),
-            ], p=0.5),
+            ], p=0.1),
             A.OneOf([
                 A.RandomShadow(p=0.4, num_shadows_upper=5),
                 A.RandomSunFlare(src_radius=20,p = 0.5 ),
@@ -135,7 +133,7 @@ class DirDataset(Dataset):
         img = augmented['image']
 
         mask[1] = augmented['mask1']
-        mask[0] = augmented['mask0']
+        mask[0] = augmented['mask0'].astype(np.float32)
 
         keypoints = augmented['keypoints']
 
@@ -163,7 +161,7 @@ class DirDataset(Dataset):
         # cv2.waitKey(0)
 
         mask = torch.FloatTensor(mask)
-        mask = ((mask / 255.0)).float()
+        mask = ((mask/255 )).float()
 
         img = Image.fromarray(img.astype(np.uint8))
 
@@ -173,8 +171,8 @@ class DirDataset(Dataset):
 
         assert -10<= img.max() <= 10
         assert -10<= img.min() <= 10
-        assert 0<= mask.max() <= 1
-        assert 0<= mask.min() <= 1
+        #assert 0<= mask.max() <= 1
+        #assert 0<= mask.min() <= 1
 
 
         return (

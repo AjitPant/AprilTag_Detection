@@ -9,12 +9,15 @@ from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 from pytorch_lightning.profiler import AdvancedProfiler
 
+import torch.nn as nn
+
 
 
 def main(hparams):
     print(hparams.dataset)
     model = Unet(hparams)
-    model = Unet.load_from_checkpoint(hparams.checkpoint,dataset = hparams.dataset)
+#    model = Unet.load_from_checkpoint(hparams.checkpoint,dataset = hparams.dataset)
+#    model.loss_func2 = nn.BCEWithLogitsLoss(pos_weight=torch.Tensor([10.0]))
 
     model.train()
 
@@ -67,7 +70,7 @@ if __name__ == '__main__':
     parent_parser.add_argument('--log_dir', default='/raid/apant_ma/AprilTag-Detection/AprilTag_Detection/detection/training/lightning_log')
     parent_parser.add_argument('--checkpoint', default=None)
     parent_parser.add_argument('--batch_size', type=int, default=1)
-    parent_parser.add_argument('--learning_rate', type=float, default=2*4*4e-4)
+    parent_parser.add_argument('--learning_rate', type=float, default=4e-4)
     parser = Unet.add_model_specific_args(parent_parser)
     hparams = parser.parse_args()
 
