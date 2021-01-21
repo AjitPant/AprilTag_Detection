@@ -36,55 +36,41 @@ class Unet(LightningModule):
             hparams,
     ):
         super().__init__()
+        torch.hub.set_dir("/raid/apant_ma/cache/")
+
 
         num_classes: int = 8
         self.hparams = hparams
 
 
-        self.model = torchvision.models.resnet50(pretrained=False, progress=True, num_classes =100)
+        self.model = torchvision.models.resnet50(pretrained=False, progress=True, num_classes =1000)
         self.model_ft_2 = nn.Sequential(
-                nn.Linear(100 ,100),
-                nn.BatchNorm1d(100),
-                nn.ReLU(),
-                nn.Linear(100, 100),
-                nn.BatchNorm1d(100),
+                nn.Linear(1000,100),
                 nn.ReLU(),
                 nn.Linear(100, num_classes),
         )
 
-    def forward(self, x):
-        hidden = self.model(x).reshape((-1, 100))
 
-        return self.model_ft_2(nn.ReLU()(hidden)).reshape((-1,4,2))
+
+    def forward(self, x):
+        hidden = self.model(x)
+
+        return self.model_ft_2(hidden).reshape((-1, 4, 2))
 
     def training_step(self, batch, batch_nb):
         x, y  = batch
 
-
         y_hat = self.forward(x)
 
 
 
         loss =       l2(y, y_hat)
+
+        self.log('dice', 0.00, on_step=False, on_epoch=True, prog_bar=False)
 
         return loss
 
-    def validation_step(self, batch, batch_nb):
-        x, y = batch
 
-        y_hat = self.forward(x)
-
-        loss =       l2(y, y_hat)
-
-
-        self.log('val_loss', loss, on_step=False, on_epoch=True, prog_bar=False)
-
-        return {'val_loss': loss}
-
-    def validation_end(self, outputs):
-        avg_loss = torch.stack([x['val_loss'] for x in outputs]).mean()
-        tensorboard_logs = {'val_loss': avg_loss}
-        return {'val_loss': avg_loss, 'log': tensorboard_logs}
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=self.hparams.learning_rate)
@@ -94,24 +80,20 @@ class Unet(LightningModule):
         dataset = self.hparams.dataset
         dataset = DirDataset(f'{dataset}/img', f'{dataset}/mask')
 
-        n_val = int(len(dataset) * 0.1)
+        n_val = int(len(dataset) * 0.01)
         n_train = len(dataset) - n_val
         print(len(dataset))
 
         train_ds, val_ds = random_split(dataset, [n_train, n_val]) #, generator=torch.Generator().manual_seed(347))
-        train_loader = DataLoader(train_ds, batch_size=self.hparams.batch_size,num_workers=1, pin_memory=True, shuffle=True)
-        val_loader = DataLoader(val_ds, batch_size=self.hparams.batch_size,num_workers=1, pin_memory=True, shuffle=False)
+        train_loader = DataLoader(train_ds, batch_size=self.hparams.batch_size,num_workers=5, pin_memory=True, shuffle=True)
 
         return {
             'train': train_loader,
-            'val': val_loader,
         }
 
     def train_dataloader(self):
         return self.__dataloader()['train']
 
-    def val_dataloader(self):
-        return self.__dataloader()['val']
 
 
     @staticmethod

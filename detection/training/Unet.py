@@ -146,7 +146,12 @@ def RegressionLoss( heatmap, keypoints):
 
 
 
+def dist_loss(y_hat, y):
+     term1 = (y_hat - y)* (y_hat - y)
+     term2 = (10*y + 1)
+     out = term1 * term2
 
+     return torch.sum(out)
 
 
 class Unet(LightningModule):
@@ -168,22 +173,40 @@ class Unet(LightningModule):
         super().__init__()
 
         num_classes: int = 1
-        num_layers: int = 6
+        num_layers:int = 6
         features_start: int = 16
         bilinear: bool = False
 
         self.hparams = hparams
         self.wt = 1
+        self.flag = False
 
         self.loss_func = nn.BCEWithLogitsLoss(pos_weight=torch.Tensor([1.0]))
-        self.loss_func2 = nn.BCEWithLogitsLoss(pos_weight=torch.Tensor([1.0]))
+        self.loss_func2 = nn.BCEWithLogitsLoss(pos_weight=torch.Tensor([10.0]))
         #self.val_func = FocalLoss(alpha=2, gamma=2)
         # self.val_func = dice_loss
-        self.dist_loss = nn.MSELoss()
+        self.dist_loss = dist_loss
         self.val_func = dice_loss
 
         self.num_layers = num_layers
 
+
+        layers = [DoubleConv(3, 2)]
+
+        feats = 2
+        for _ in range(num_layers - 1):
+            layers.append(Down(feats, feats * 2))
+            feats *= 2
+
+        for _ in range(num_layers - 1):
+            layers.append(Up(feats, feats // 2, bilinear))
+            feats //= 2
+
+
+        layers.append(nn.Conv2d(feats, int(num_classes), kernel_size=1))
+
+
+        self.layers_corners = nn.ModuleList(copy.deepcopy(layers))
 
         layers = [DoubleConv(3, features_start)]
 
@@ -201,23 +224,6 @@ class Unet(LightningModule):
 
         self.layers_segmentation = nn.ModuleList(copy.deepcopy(layers))
 
-
-
-        layers = [DoubleConv(3, 2)]
-
-        feats = 2
-        for _ in range(num_layers - 1):
-            layers.append(Down(feats, feats * 2))
-            feats *= 2
-
-        for _ in range(num_layers - 1):
-            layers.append(Up(feats, feats // 2, bilinear))
-            feats //= 2
-
-
-        layers.append(nn.Conv2d(feats, int(num_classes), kernel_size=1))
-
-        self.layers_corners = nn.ModuleList(copy.deepcopy(layers))
 
     def forward(self, x):
         xi = [[self.layers_segmentation[0](x), self.layers_corners[0](x)]]
@@ -237,35 +243,16 @@ class Unet(LightningModule):
 
         loss = self.loss_func(y_hat[:,1], y[:,1])
         #dice = self.val_func(y_hat[:,0], y[:,0]) #+ self.val_func(y_hat[:,1], y[:,1]) + self.loss_func(y_hat, y)
-        dice = self.loss_func2(y_hat[:,0], y[:,0])
+
+        if self.flag:
+            dice = self.loss_func(y_hat[:,0], y[:,0])
+        else:
+            dice = self.loss_func2(y_hat[:,0], y[:,0])
+
 
         dist = self.dist_loss((y_hat[:,0]), y[:,0])
 
-        t_loss = loss  +  dist
-#
-#        y_hat = (nn.Sigmoid()(y_hat[:,0]) - 0.5).unsqueeze(1)
-#        x = ( x+ y_hat) /2
-#        y_hat = self.forward(x)
-#
-#        loss = self.loss_func(y_hat[:,1], y[:,1])
-#        #dice = self.val_func(y_hat[:,0], y[:,0]) #+ self.val_func(y_hat[:,1], y[:,1]) + self.loss_func(y_hat, y)
-#        dice = self.loss_func2(y_hat[:,0], y[:,0])
-#
-#        dist = self.dist_loss(nn.Sigmoid()(y_hat[:,0]), y[:,0])
-
-        #t_loss = loss  +  dice + dist + t_loss
-
-        # y_hat = (nn.Sigmoid()(y_hat[:,0]) - 0.5).unsqueeze(1)
-        # x = ( x+ y_hat) /2
-        # y_hat = self.forward(x)
-
-        # loss = self.loss_func(y_hat[:,1], y[:,1])
-        # #dice = self.val_func(y_hat[:,0], y[:,0]) #+ self.val_func(y_hat[:,1], y[:,1]) + self.loss_func(y_hat, y)
-        # dice = self.loss_func2(y_hat[:,0], y[:,0])
-
-        # dist = self.dist_loss(nn.Sigmoid()(y_hat[:,0]), y[:,0])
-
-        # t_loss = loss  +  100*dice + 100*dist + t_loss
+        t_loss =  dist + loss
 
         self.log('bce', loss, on_step=True, on_epoch=False, prog_bar=True)
         self.log('dice', dice, on_step=True, on_epoch=False, prog_bar=True)
@@ -275,23 +262,22 @@ class Unet(LightningModule):
 
 
         return t_loss
-    def training_epoch_end(self, training_step_outputs):
-        self.wt *= 0.95
-    def validation_step(self, batch, batch_nb):
-        x, y = batch
 
-        y_hat = self.forward(x)
+    # def validation_step(self, batch, batch_nb):
+    #     x, y = batch
 
-        loss = 0#self.loss_func(y_hat, y)
+    #     y_hat = self.forward(x)
 
-        self.log('val_loss', loss, on_step=False, on_epoch=True, prog_bar=False)
+    #     loss = 0#self.loss_func(y_hat, y)
 
-        return {'val_loss': loss}
+    #     self.log('val_loss', loss, on_step=False, on_epoch=True, prog_bar=False)
 
-    def validation_end(self, outputs):
-        avg_loss = torch.stack([x['val_loss'] for x in outputs]).mean()
-        tensorboard_logs = {'val_loss': avg_loss}
-        return {'val_loss': avg_loss, 'log': tensorboard_logs}
+    #     return {'val_loss': loss}
+
+    # def validation_end(self, outputs):
+    #     avg_loss = torch.stack([x['val_loss'] for x in outputs]).mean()
+    #     tensorboard_logs = {'val_loss': avg_loss}
+    #     return {'val_loss': avg_loss, 'log': tensorboard_logs}
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=self.hparams.learning_rate)
@@ -301,24 +287,24 @@ class Unet(LightningModule):
         dataset = self.hparams.dataset
         dataset = DirDataset(f'{dataset}/img', f'{dataset}/mask')
 
-        n_val = int(len(dataset) * 0.1)
+        n_val = int(len(dataset) * 0.01)
         n_train = len(dataset) - n_val
         print(len(dataset))
 
         train_ds, val_ds = random_split(dataset, [n_train, n_val]) #, generator=torch.Generator().manual_seed(347))
-        train_loader = DataLoader(train_ds, batch_size=self.hparams.batch_size,num_workers=32, pin_memory=True, shuffle=True)
-        val_loader = DataLoader(val_ds, batch_size=self.hparams.batch_size,num_workers=32, pin_memory=True, shuffle=False)
+        train_loader = DataLoader(train_ds, batch_size=self.hparams.batch_size,num_workers=5, pin_memory=True, shuffle=True)
+        # val_loader = DataLoader(val_ds, batch_size=self.hparams.batch_size,num_workers=5, pin_memory=True, shuffle=False)
 
         return {
             'train': train_loader,
-            'val': val_loader,
+            # 'val': val_loader,
         }
 
     def train_dataloader(self):
         return self.__dataloader()['train']
 
-    def val_dataloader(self):
-        return self.__dataloader()['val']
+    # def val_dataloader(self):
+    #     return self.__dataloader()['val']
 
 
     @staticmethod
