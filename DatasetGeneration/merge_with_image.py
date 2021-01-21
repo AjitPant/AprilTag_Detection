@@ -83,7 +83,7 @@ def augment_and_save(file, overlayer, args):
 
             corners_collection = [ [x/8 for x in y ]  for y in corners_collection]
 
-            reduce_to_tags(img_out, corners_collection,bytecode_collection,familycode_collection, filename, args)
+#            reduce_to_tags(img_out, corners_collection,bytecode_collection,familycode_collection, filename, args)
 
             cv2.imwrite(os.path.join(args.out_folder, 'img',
                                      filename[:-4] + "_" + str(j) + '.jpg'), img_out)
@@ -117,7 +117,7 @@ def app():
     parser.add_argument(
         '--out_folder',
         type=str,
-        default='/raid/apant_ma/AprilTag-Detection/AprilTag_Detection/DatasetGeneration/dataset/36h11-9',
+        default='/raid/apant_ma/AprilTag-Detection/AprilTag_Detection/DatasetGeneration/dataset/36h11-11',
         help='Output folder which contains dataset')
     parser.add_argument(
         '--family',
@@ -156,9 +156,9 @@ def app():
     directory = os.fsencode(args.img_folder)
     i = 0
 
-    n_processors =32
+    n_processors =40
 
-    mx_files = 5000
+    mx_files = 50
 
     file_list = sorted(list(os.listdir(directory))[0*mx_files:1*mx_files])
 

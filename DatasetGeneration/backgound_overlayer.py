@@ -20,7 +20,7 @@ class backgroundOverlayer(object):
         corners_collection = []
         bytecode_collection = []
         familycode_collection = []
-        tags_to_overlay = 10
+        tags_to_overlay = 1
         out_response = np.zeros(background_img.shape[:2], dtype = np.uint8)
         real_out_response = np.full((background_img.shape[0],background_img.shape[1], 5),0, dtype = np.uint8)
         real_out_response[:,:,-1] = 255
@@ -34,7 +34,7 @@ class backgroundOverlayer(object):
         #It attemps to generate as many tags as possible till the upper_limit tags_to_overlay, but sometimes two might overlap it will just remove the later one
 
         for tag in range(tags_to_overlay):
-            index = random.randrange(min(1,len(self.generator)))
+            index = random.randrange(min(1000,len(self.generator)))
 
             result = self.generator[index]
 
@@ -81,7 +81,7 @@ class backgroundOverlayer(object):
 
 
             #Find light
-            if np.random.uniform(0, 1, 1)[0] > 0.1:
+            if np.random.uniform(0, 1, 1)[0] > 1.1:
 
                 background_img_view_lab = cv2.cvtColor(background_img_view, cv2.COLOR_BGR2LAB)
                 tag_img_view_lab = cv2.cvtColor(tag_img_masked, cv2.COLOR_BGR2LAB)

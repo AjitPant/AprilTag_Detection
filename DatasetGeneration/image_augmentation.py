@@ -17,7 +17,7 @@ class Rotation3DAugmentation(object):
                  rx_lim_deg=(0., 0.),
                  ry_lim_deg=(0., 0.),
                  rz_lim_deg=(0., 0.),
-                 prob=1.0,
+                 prob=0.9,
                  debug=False):
         '''
         :param rx_lim_deg: tuple(float, float) range of rotation around x axis in degree

@@ -19,7 +19,7 @@ class DirDataset(Dataset):
         self.scale = scale
         original_height = 512*2
         original_width = 512*2
-
+        print(self.img_dir)
 
         self.aug = A.Compose([
 
@@ -39,14 +39,14 @@ class DirDataset(Dataset):
                A.RandomSizedCrop(min_max_height=(original_height//1.5, original_height//1),
                                   height=original_height//2, width=original_width//2, p=1.0),
 
-            ], p=0.6),
+            ], p=0.0),
 
             A.PadIfNeeded(min_height=original_height, min_width=original_width, p = 1.0, border_mode=cv2.BORDER_CONSTANT, value = 0),
             A.OneOf([
                 A.Blur((5,25), p = 0.5),
                 A.MotionBlur((5,25),p =  0.5),
 
-            ], p=0.1),
+            ], p=0.0),
 
             A.OneOf([
                 A.ToGray(),
@@ -68,17 +68,17 @@ class DirDataset(Dataset):
             A.OneOf([
                 A.RandomRain(),
                 A.RandomFog( fog_coef_lower = 0.1, fog_coef_upper = 0.3),
-            ], p=0.1),
+            ], p=0.0),
             A.OneOf([
                 A.RandomShadow(p=0.4, num_shadows_upper=5),
-                A.RandomSunFlare(src_radius=20,p = 0.5 ),
+                A.RandomSunFlare(src_radius=20,p = 0.1 ),
             ], p=0.5),
             A.OneOf([
                 A.RandomBrightnessContrast(p=0.5),
                 A.RGBShift(p=0.5),
                 A.RandomGamma(p=0.8)
             ], p=0.4),
-        ], p=0.0,
+        ], p=0.9,
             additional_targets={
             'image': 'image',
 
@@ -138,14 +138,20 @@ class DirDataset(Dataset):
         keypoints = augmented['keypoints']
 
 
+        img = cv2.resize(img, (512,512))
+        mask[0] = cv2.resize(mask[0], (512,512))
+        mask[1] = cv2.resize(mask[1], (512,512))
+
+
         mask[0].fill(0)
 
         d = 16
 
         for point in keypoints:
+            point = [point[0]/2, point[1]/2]
             for x in range(max(0, int(point[1])-d),min(img.shape[0], int(point[1])+d+1)):
                 for y in range(max(0, int(point[0])-d),min(img.shape[1], int(point[0])+d+1)):
-                    dist = exp(-(( point[0] - y) *(point[0] - y)  + (point[1] - x) *(point[1] - x))/8)
+                    dist = exp(-(( point[0] - y) *(point[0] - y)  + (point[1] - x) *(point[1] - x))/32)
 
                     mask[0][x][y] = 255*dist
                    # mask[0][max(0, int(point[1]) -d): min(img.shape[0], int(point[1])+d+1), max(0, int(point[0]) -d): min(img.shape[1], int(point[0])+d+1)] = 255 / ( dist)
