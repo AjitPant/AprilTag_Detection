@@ -155,9 +155,11 @@ class DirDataset(Dataset):
         # cv2.namedWindow("mask[1]", cv2.WINDOW_NORMAL)
         # cv2.imshow("mask[1]", mask[1])
 
-        # cv2.namedWindow("img", cv2.WINDOW_NORMAL)
-        # cv2.imshow("img", img)
-        # cv2.waitKey(0)
+        cv2.namedWindow("img", cv2.WINDOW_NORMAL)
+        cv2.imshow("img", img)
+
+        print(keypoints)
+        cv2.waitKey(0)
 
         mask = torch.FloatTensor(mask)
         mask = ((mask / 255.0)).float()

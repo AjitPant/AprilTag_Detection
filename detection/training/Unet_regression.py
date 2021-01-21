@@ -99,8 +99,8 @@ class Unet(LightningModule):
         print(len(dataset))
 
         train_ds, val_ds = random_split(dataset, [n_train, n_val]) #, generator=torch.Generator().manual_seed(347))
-        train_loader = DataLoader(train_ds, batch_size=self.hparams.batch_size,num_workers=32, pin_memory=True, shuffle=True)
-        val_loader = DataLoader(val_ds, batch_size=self.hparams.batch_size,num_workers=32, pin_memory=True, shuffle=False)
+        train_loader = DataLoader(train_ds, batch_size=self.hparams.batch_size,num_workers=1, pin_memory=True, shuffle=True)
+        val_loader = DataLoader(val_ds, batch_size=self.hparams.batch_size,num_workers=1, pin_memory=True, shuffle=False)
 
         return {
             'train': train_loader,

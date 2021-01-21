@@ -168,7 +168,7 @@ class Unet(LightningModule):
         super().__init__()
 
         num_classes: int = 1
-        num_layers: int = 5
+        num_layers: int = 6
         features_start: int = 16
         bilinear: bool = False
 
@@ -200,6 +200,23 @@ class Unet(LightningModule):
         layers.append(nn.Conv2d(feats, int(num_classes), kernel_size=1))
 
         self.layers_segmentation = nn.ModuleList(copy.deepcopy(layers))
+
+
+
+        layers = [DoubleConv(3, 2)]
+
+        feats = 2
+        for _ in range(num_layers - 1):
+            layers.append(Down(feats, feats * 2))
+            feats *= 2
+
+        for _ in range(num_layers - 1):
+            layers.append(Up(feats, feats // 2, bilinear))
+            feats //= 2
+
+
+        layers.append(nn.Conv2d(feats, int(num_classes), kernel_size=1))
+
         self.layers_corners = nn.ModuleList(copy.deepcopy(layers))
 
     def forward(self, x):
@@ -224,7 +241,7 @@ class Unet(LightningModule):
 
         dist = self.dist_loss((y_hat[:,0]), y[:,0])
 
-        t_loss = loss  +  dist 
+        t_loss = loss  +  dist
 #
 #        y_hat = (nn.Sigmoid()(y_hat[:,0]) - 0.5).unsqueeze(1)
 #        x = ( x+ y_hat) /2

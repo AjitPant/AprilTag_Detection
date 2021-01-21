@@ -5,6 +5,7 @@ from matplotlib import pyplot as plt
 from torch import nn
 from argparse import ArgumentParser
 import glob
+import scipy.optimize as opt
 import os
 import cv2
 import numpy as np
@@ -31,6 +32,11 @@ def order_points(pts):
 	out = sorted(coords, key=lambda coord: (-135 - math.degrees(math.atan2(*tuple(map(operator.sub, coord, center))[::-1]))) % 360)
 	return np.array(out, dtype="float32")
 
+def paraBolEqn(data,a,b,c,d, e, f):
+    x= data[:,0]
+    y= data[:,1]
+    return a * x* x + b * y * y + c * x * y + d* x + e* y + f
+
 global_output_corners, global_output_id, global_output_cnter = [], [], []
 
 def reduce_to_tags(net, img, response_1, response_2,  args):
@@ -46,7 +52,7 @@ def reduce_to_tags(net, img, response_1, response_2,  args):
     segregates = []
 
 
-    mask_corners =  ((mask_corners* 255))
+    mask_corners =  ((mask_corners*255))
 
     mask_corners[mask_corners < 10] = 0
 
@@ -57,7 +63,7 @@ def reduce_to_tags(net, img, response_1, response_2,  args):
 
 
     cv2.namedWindow('mask_segmentation', cv2.WINDOW_NORMAL)
-    cv2.imshow("mask_segmentation", mask_segmentation*255)
+    cv2.imshow("mask_segmentation", (mask_segmentation*255).astype(np.uint8))
     cv2.waitKey(cv_time_wait)
 
     mask_real_corners = np.zeros(mask_corners.shape[1:], dtype=np.float32)
@@ -66,7 +72,7 @@ def reduce_to_tags(net, img, response_1, response_2,  args):
     print(np.unique(mask_real_corners))
 
     cv2.namedWindow('mask_garbage', cv2.WINDOW_NORMAL)
-    cv2.imshow("mask_garbage", mask_real_corners)
+    cv2.imshow("mask_garbage", mask_real_corners.astype(np.uint8))
     cv2.waitKey(cv_time_wait)
 
 
@@ -120,6 +126,9 @@ def reduce_to_tags(net, img, response_1, response_2,  args):
 
         internal_mask = internal_mask* mask_real_corners
 
+        cv2.namedWindow("internal_mask", cv2.WINDOW_NORMAL)
+        cv2.imshow("internal_mask", internal_mask.astype(np.uint8))
+        cv2.waitKey(cv_time_wait)
         internal_contours, _ = cv2.findContours(
             internal_mask.astype(np.uint8), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
 
@@ -127,20 +136,44 @@ def reduce_to_tags(net, img, response_1, response_2,  args):
             internal_internal_mask = np.zeros(
                 mask_real_corners.shape, dtype=np.uint8)
             cv2.drawContours(internal_internal_mask,
-                             internal_contours, inner_ind, 255, -1)
+                             internal_contours, inner_ind, 1, -1)
 
 
 
             internal_internal_mask = internal_internal_mask* mask_real_corners
-
             cv2.namedWindow("internal_internal_mask", cv2.WINDOW_NORMAL)
-            cv2.imshow("internal_internal_mask", internal_internal_mask)
+            cv2.imshow("internal_internal_mask", internal_internal_mask.astype(np.uint8))
             cv2.waitKey(cv_time_wait)
 
-            #find the center of contours
-            M = cv2.moments(internal_contours[inner_ind])
+
+            # # find the paraboloid
+
+            # data = []
+            # zdata = []
+            # pmax = (0, (0,0))
+            # for x in range(1024):
+            #     for y in range(1024):
+            #         if(internal_internal_mask[x][y] >  0):
+            #            data.append([x,y])
+            #            zdata.append(internal_internal_mask[x][y])
+            #            pmax = max(pmax, (internal_internal_mask[x,y], (x,y)))
+
+            # data = np.array(data)
+            # data -= np.array([[pmax[1][0],pmax[1][1]]])
+
+            # popt, pcov = opt.curve_fit(paraBolEqn,data,zdata)
+            # a, b, c, d, e, f = popt
+
+            # cY = pmax[1][0] + (2 * b *d - c* e)/( c*c - 4* a *b)
+            # cX = pmax[1][1] + (2 * a *e - c* d)/( c*c - 4* a *b)
+
+
+            # # # find the center of contours
+            M = cv2.moments(internal_internal_mask)
+            # M = cv2.moments(internal_contours[inner_ind])
             cX = (M["m10"] / (M["m00"]+1e-18))
             cY = (M["m01"] / (M["m00"]+1e-18))
+
             segregates.append([cX, cY])
 
 
@@ -293,7 +326,7 @@ def reduce_to_tags(net, img, response_1, response_2,  args):
     return return_list_corner_id, detected
 
 
-def predict(net, img, device='cuda', threshold=0.5, kernel =1024, stride =1024):
+def predict(net, img, device='cuda', threshold=0.5, kernel =1024//2, stride =1024//2):
     with torch.no_grad():
         ds = DirDataset('', '')
         _img = (ds.preprocess(img))
@@ -380,11 +413,11 @@ def main(args):
         net_bytecode.to(args.device)
         net_bytecode.eval()
 
-        img_list = sorted([str(item) for item in glob.glob(args.img + "*.jpg")])[:1000]
-        pkl_list = sorted([str(item) for item in glob.glob(args.img + "*.pkl")])[:1000]
+        img_list = sorted([str(item) for item in glob.glob(args.img + "*.jpg")])[:10]
+        pkl_list = sorted([str(item) for item in glob.glob(args.img + "*.pkl")])[:10]
 
         for img_str, pkl_str in zip(img_list, pkl_list):
-            im_size = 1024
+            im_size = 1024//2
             img = Image.open(img_str).convert('RGB')
             ind = img_str[-7:-4]
 
@@ -426,6 +459,8 @@ def main(args):
                         print(c, ic)
                         diff = 0.0
                         mn = min(mn, ((ic[0]/2 - c[0] -diff  )* (ic[0]/2 - c[0] -diff ) + (ic[1]/2 - c[1] -diff )* (ic[1]/2 - c[1]  -diff), (ic[0]/2 -c[0] , ic[1]/2 - c[1]) ))
+                        mn = min(mn, ((ic[0]/4 - c[0] -diff  )* (ic[0]/4 - c[0] -diff ) + (ic[1]/4 - c[1] -diff )* (ic[1]/4 - c[1]  -diff), (ic[0]/4 -c[0] , ic[1]/4 - c[1]) ))
+                        # mn = min(mn, ((ic[0]/8 - c[0] -diff  )* (ic[0]/8 - c[0] -diff ) + (ic[1]/8 - c[1] -diff )* (ic[1]/8 - c[1]  -diff), (ic[0]/8 -c[0] , ic[1]/8 - c[1]) ))
                         mn = min(mn, ((ic[0] - c[0] -diff  )* (ic[0] - c[0] -diff  ) + (ic[1] - c[1] -diff )* (ic[1] - c[1]-diff ), (ic[0]/2 -c[0] , ic[1]/2 - c[1]) ))
 
                     dst_sm += math.sqrt(mn[0])
