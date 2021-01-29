@@ -148,10 +148,10 @@ def RegressionLoss( heatmap, keypoints):
 
 def dist_loss(y_hat, y):
      term1 = (y_hat - y)* (y_hat - y)
-     term2 = (10*y + 1)
+     term2 = ( 1)
      out = term1 * term2
 
-     return torch.sum(out)
+     return torch.mean(out)
 
 
 class Unet(LightningModule):
