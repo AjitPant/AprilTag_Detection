@@ -11,29 +11,6 @@ from pytorch_lightning import LightningModule
 
 from dataset import DirDataset
 
-class FocalLoss(nn.Module):
-    def __init__(self, alpha=1, gamma=2, logits=True, reduce=True):
-        super(FocalLoss, self).__init__()
-        self.alpha = alpha
-        self.gamma = gamma
-        self.logits = logits
-        self.reduce = reduce
-
-    def forward(self, inputs, targets):
-        if self.logits:
-            BCE_loss = F.binary_cross_entropy_with_logits(inputs, targets, reduce=False)
-        else:
-            BCE_loss = F.binary_cross_entropy(inputs, targets, reduce=False)
-        pt = torch.exp(-BCE_loss)
-        F_loss = self.alpha * (1-pt)**self.gamma * BCE_loss
-
-        if self.reduce:
-            return torch.mean(F_loss)
-        else:
-            return torch.sum(F_loss)
-
-
-
 
 
 
@@ -121,27 +98,6 @@ def dice_loss(input, target):
 def dist(pred, real):
     return ( pred[0] - real[0]) * (pred[0] - real[0]) + (pred[1] - real[1])* (pred[1] - real[1])
 
-
-def RegressionLoss( heatmap, keypoints):
-    loss = torch.zeros([1], dtype=heatmap.dtype, device=heatmap.device)
-    d = 3
-    for ind,points in enumerate([keypoints]):
-        for point in points:
-            sm = torch.zeros([1], dtype=heatmap.dtype, device=heatmap.device)
-            wt_sm_x = torch.zeros([1], dtype=heatmap.dtype, device=heatmap.device)
-            wt_sm_y = torch.zeros([1], dtype=heatmap.dtype, device=heatmap.device)
-   #         slice= heatmap[ind][ range(max(0, int(point[1])-d),min(1024, int(point[1])+d+1))][for y in range(max(0, int(point[0])-d),min(1024, int(point[0])+d+1))]
-
-            # calculate x,y coordinate of center
-            cX = wt_sm_x / ( sm + 1e-5)
-            cY = wt_sm_y / ( sm + 1e-5)
-
-            x_pred = cX + x
-            y_pred = cY +y
-
-            loss += dist((y_pred, x_pred), point)
-
-    return loss
 
 
 

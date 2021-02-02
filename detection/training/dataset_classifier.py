@@ -19,7 +19,7 @@ class DirDataset(Dataset):
         #self.img_dir = './dataset/try/ssimg'
         #self.label_dir = './dataset/try/simg'
         self.scale = scale
-        self.label_side = 10
+        self.label_side = 224
 
 
 

@@ -24,62 +24,85 @@ class DirDataset(Dataset):
         self.aug = A.Compose([
 
             A.OneOf([
-
-
-
-
-
-
-
                A.RandomSizedCrop(min_max_height=(original_height//2, original_height),
                                   height=original_height//1, width=original_width//1, p=1.0),
+               A.RandomSizedCrop(min_max_height=(original_height//4, original_height),
+                                  height=original_height//1, width=original_width//2, p=1.0),
+               A.RandomSizedCrop(min_max_height=(original_height//4, original_height),
+                                  height=original_height//2, width=original_width//2, p=1.0),
 
-            ], p=0.0),
+            ], p=0.5),
+
+            A.OneOf([
+               A.Downscale(),
+
+            ], p=0.2),
 
             A.PadIfNeeded(min_height=original_height, min_width=original_width, p = 1.0, border_mode=cv2.BORDER_CONSTANT, value = 0),
+
             A.OneOf([
                 A.Blur((5,25), p = 0.5),
                 A.MotionBlur((5,25),p =  0.5),
+                A.GaussianBlur(p =  0.5),
+                A.MedianBlur(p =  0.5),
 
-            ], p=0.0),
+            ], p=0.3),
 
             A.OneOf([
                 A.ToGray(),
                 A.ChannelDropout(),
-            ], p=0.5),
+                A.ChannelShuffle(),
+                A.Cutout(),
+                # A.GridDropout(),
+            ], p=0.7),
 
+            A.OneOf([
+                A.ColorJitter(),
+            ], p=0.5),
 
             A.OneOf([
                 A.VerticalFlip(p=0.5),
                 A.HorizontalFlip(p=0.5),
-            ], p=0.0),
+            ], p=0.2),
 
             A.OneOf([
                 A.RandomRotate90(p=0.5),
                 A.Rotate(limit=180, p=0.5),
-            ], p=0.0),
+            ], p=0.2),
+
             A.CLAHE(p = 0.2),
-            A.GaussNoise(p = 0.5),
+
+            A.OneOf([
+                A.GaussNoise(p = 0.5),
+                A.ISONoise(p = 0.5),
+                A.MultiplicativeNoise(p = 0.5),
+            ], p=0.5),
+
             A.OneOf([
                 A.RandomRain(),
                 A.RandomFog( fog_coef_lower = 0.1, fog_coef_upper = 0.3),
-            ], p=0.3),
+            ], p=0.1),
+
             A.OneOf([
                 A.RandomShadow(p=0.4, num_shadows_upper=5),
                 A.RandomSunFlare(src_radius=20,p = 0.2 ),
-            ], p=0.5),
+            ], p=0.0),
+
             A.OneOf([
                 A.RandomBrightnessContrast(p=0.5),
                 A.RGBShift(p=0.5),
                 A.RandomGamma(p=0.8)
             ], p=0.4),
+
         ], p=0.9,
+
             additional_targets={
             'image': 'image',
 
             'mask0': 'mask',
             'mask1': 'mask',
             'keypoints': 'keypoints',
+
         }, keypoint_params=A.KeypointParams(format='xy'))
 
         try:
@@ -118,6 +141,7 @@ class DirDataset(Dataset):
         assert os.path.exists(keypoints_file), 'keypoints files missing'
 
         img = cv2.imread(img_files[0])
+        assert (img is not None), img_files[0] + " garbage file image"
         mask = [cv2.imread(mask_file, cv2.IMREAD_GRAYSCALE)
                 for mask_file in mask_files]
 
