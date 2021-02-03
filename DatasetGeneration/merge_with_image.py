@@ -7,7 +7,7 @@ import copy
 import argparse
 import cv2
 import numpy as np
-from apriltag_images import TAG36h11,TAG41h12, AprilTagImages
+from apriltag_images import TAG36h11,TAG41h12, TAG400h1, AprilTagImages
 from apriltag_generator import AprilTagGenerator
 from backgound_overlayer import backgroundOverlayer
 
@@ -41,7 +41,7 @@ mutex = Lock()
 
 cnt = [0,0,0,0]
 def reduce_to_tags(img,  corners_collection, bytecode_collection,familycode_collection, filename, args):
-    pad = 80
+    pad = 60
     for j,(corners, bytecode, code) in enumerate(zip(corners_collection, bytecode_collection, familycode_collection)):
             h, status = cv2.findHomography(
                 np.array(corners), np.array([[pad, pad], [pad, 224-pad], [224-pad, 224-pad], [224-pad, pad]]))
@@ -83,7 +83,7 @@ def augment_and_save(file, overlayer, args):
 
             corners_collection = [ [x/8 for x in y ]  for y in corners_collection]
 
-#            reduce_to_tags(img_out, corners_collection,bytecode_collection,familycode_collection, filename, args)
+            reduce_to_tags(img_out, corners_collection,bytecode_collection,familycode_collection, filename, args)
 
             cv2.imwrite(os.path.join(args.out_folder, 'img',
                                      filename[:-4] + "_" + str(j) + '.jpg'), img_out)
@@ -117,12 +117,12 @@ def app():
     parser.add_argument(
         '--out_folder',
         type=str,
-        default='/raid/apant_ma/AprilTag-Detection/AprilTag_Detection/DatasetGeneration/dataset/36h11-11',
+        default='/raid/apant_ma/AprilTag-Detection/AprilTag_Detection/DatasetGeneration/dataset/36h11-14',
         help='Output folder which contains dataset')
     parser.add_argument(
         '--family',
         type=str,
-        default=TAG36h11,
+        default=TAG400h1,
         help='April tag family.')
     parser.add_argument(
         '--size',
@@ -144,11 +144,11 @@ def app():
     generator = AprilTagGenerator(root=args.root,
                                   family=args.family,
                                   size=args.size,
-                                  rx_lim_deg=(-50, 50),
-                                  ry_lim_deg=(-50, 50),
+                                  rx_lim_deg=(-80, 80),
+                                  ry_lim_deg=(-80, 80),
                                   rz_lim_deg=(-180, 180),
-                                  scalex_lim=(1.0/128, 1.0),
-                                  scaley_lim=(1.0/128, 1.0),
+                                  scalex_lim=(1.0/16, 1.0),
+                                  scaley_lim=(1.0/16, 1.0),
                                   )
 
     print(len(generator))
@@ -158,9 +158,9 @@ def app():
 
     n_processors =40
 
-    mx_files = 50
+    mx_files = 5000
 
-    file_list = sorted(list(os.listdir(directory))[0*mx_files:1*mx_files])
+    file_list = sorted(list(os.listdir(directory))[1*mx_files:2*mx_files])
 
     '''
     pass the task function, followed by the parameters to processors

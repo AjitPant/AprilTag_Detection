@@ -1,12 +1,14 @@
 import cv2
 import numpy as np
 import os
+import random
 import copy
 
 TAG36h11 = 'tag36h11'
 TAG41h12 = 'tag41h12'
 TAG52h13 = 'tag52h13'
 TAG16h5 =  'tag16h5'
+TAG400h1 =  'tag400h1'
 
 
 class AprilTagImages(object):
@@ -28,17 +30,21 @@ class AprilTagImages(object):
         """
         :return: Number of April tag images.
         """
-        return len(self.images)
+        if not self.family == TAG400h1:
+            return len(self.images)
+
+        return 1
 
     def extract_images(self):
         """
         Extract April tag images from mosaic image containing all tags.
         :return:
         """
-        assert os.path.exists(self.path), "{} does not exist!".format(self.path)
-        mosaic_image = cv2.imread(self.path)[:, :, 0]
-        nsquares_y = mosaic_image.shape[0] - np.count_nonzero(np.sum(mosaic_image, axis=1, dtype=np.int)) + 1
-        nsquares_x = mosaic_image.shape[1] - np.count_nonzero(np.sum(mosaic_image, axis=0, dtype=np.int)) + 1
+        if not self.family == TAG400h1:
+            assert os.path.exists(self.path), "{} does not exist!".format(self.path)
+            mosaic_image = cv2.imread(self.path)[:, :, 0]
+            nsquares_y = mosaic_image.shape[0] - np.count_nonzero(np.sum(mosaic_image, axis=1, dtype=np.int)) + 1
+            nsquares_x = mosaic_image.shape[1] - np.count_nonzero(np.sum(mosaic_image, axis=0, dtype=np.int)) + 1
 
         if self.family == TAG36h11:
             step = 10
@@ -95,6 +101,36 @@ class AprilTagImages(object):
                            [1, 0, 0, 0, 0, 0, 0, 1] ,
                            [1, 1, 1, 1, 1, 1, 1, 1] ,
                            ]
+        elif self.family == TAG400h1:
+            step = 20
+            familycode = [
+                           [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1] ,
+                           [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1] ,
+                           [1, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 1] ,
+                           [1, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 1] ,
+                           [1, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 1] ,
+                           [1, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 1] ,
+                           [1, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 1] ,
+                           [1, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 1] ,
+                           [1, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 1] ,
+                           [1, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 1] ,
+                           [1, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 1] ,
+                           [1, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 1] ,
+                           [1, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 1] ,
+                           [1, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 1] ,
+                           [1, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 1] ,
+                           [1, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 1] ,
+                           [1, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 1] ,
+                           [1, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 1] ,
+                           [1, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 1] ,
+                           [1, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 1] ,
+                           [1, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 1] ,
+                           [1, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 1] ,
+                           [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1] ,
+                           [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1] ,
+                           ]
+
+            return list(), list(), familycode
         else:
             assert False, 'Unknown April tag family!' + self.family
 
@@ -129,11 +165,35 @@ class AprilTagImages(object):
         elif self.family == TAG16h5:
             lo = 1/8
             hi = 7/8
+        elif self.family == TAG400h1:
+            lo = 1/24
+            hi = 23/24
         else:
             assert False, 'Unknown April tag family!' + self.family
         return np.array([[[lo, lo], [hi, lo], [hi, hi], [lo, hi]],
                          [[0.00, 0.00], [1-0.00, 0.00], [1-0.00, 1-0.00], [0.00, 1-0.00]]], dtype=np.float32)
 
     def image(self, idx):
-                    assert idx < len(self.images), 'Not a valid index.'
-                    return self.images[idx], self.bytecodes[idx], self.familycode
+        if not self.family == TAG400h1:
+            assert idx < len(self.images), 'Not a valid index.'
+            return self.images[idx], self.bytecodes[idx], self.familycode
+
+        image = np.zeros((24,24), dtype = np.uint8)
+        bytecode = np.zeros((24,24), dtype = np.uint8)
+
+
+        for i in range(24):
+            for j in range(24):
+                if self.familycode[i][j] == 2:
+                    bytecode[i,j] = random.randint(0,1)*255
+                    image[i,j] = bytecode[i, j]
+                else:
+                    bytecode[i, j] = self.familycode[i][j] * 255
+                    image[i, j] = bytecode[i, j]
+
+        image = cv2.resize(
+            image,
+            dsize=(self.size, self.size),
+            interpolation=cv2.INTER_NEAREST)
+
+        return image, bytecode, self.familycode

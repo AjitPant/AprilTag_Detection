@@ -145,11 +145,12 @@ class Unet(LightningModule):
         self.val_func = dice_loss
 
         self.num_layers = num_layers
+        self.bilinear = bilinear
 
 
-        layers = [DoubleConv(3, 2)]
+        layers = [DoubleConv(3, 8)]
 
-        feats = 2
+        feats = 8
         for _ in range(num_layers - 1):
             layers.append(Down(feats, feats * 2))
             feats *= 2
@@ -180,6 +181,24 @@ class Unet(LightningModule):
 
         self.layers_segmentation = nn.ModuleList(copy.deepcopy(layers))
 
+    def help(self):
+
+        layers = [DoubleConv(3, 8)]
+
+        feats = 8
+        for _ in range(self.num_layers - 1):
+            layers.append(Down(feats, feats * 2))
+            feats *= 2
+
+        for _ in range(self.num_layers - 1):
+            layers.append(Up(feats, feats // 2, self.bilinear))
+            feats //= 2
+
+
+        layers.append(nn.Conv2d(feats, int(1), kernel_size=1))
+
+
+        self.layers_corners = nn.ModuleList(copy.deepcopy(layers))
 
     def forward(self, x):
         xi = [[self.layers_segmentation[0](x), self.layers_corners[0](x)]]

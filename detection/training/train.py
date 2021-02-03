@@ -17,6 +17,7 @@ def main(hparams):
     print(hparams.dataset)
     model = Unet(hparams)
     # model = Unet.load_from_checkpoint(hparams.checkpoint,dataset = hparams.dataset, learning_rate = hparams.learning_rate)
+    # model.help()
 #    model.loss_func2 = nn.BCEWithLogitsLoss(pos_weight=torch.Tensor([10.0]))
 
     model.train()

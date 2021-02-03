@@ -20,7 +20,7 @@ class backgroundOverlayer(object):
         corners_collection = []
         bytecode_collection = []
         familycode_collection = []
-        tags_to_overlay = 1
+        tags_to_overlay = 10
         out_response = np.zeros(background_img.shape[:2], dtype = np.uint8)
         real_out_response = np.full((background_img.shape[0],background_img.shape[1], 5),0, dtype = np.uint8)
         real_out_response[:,:,-1] = 255
@@ -81,7 +81,7 @@ class backgroundOverlayer(object):
 
 
             #Find light
-            if np.random.uniform(0, 1, 1)[0] > 1.1:
+            if np.random.uniform(0, 1, 1)[0] > 0.1:
 
                 background_img_view_lab = cv2.cvtColor(background_img_view, cv2.COLOR_BGR2LAB)
                 tag_img_view_lab = cv2.cvtColor(tag_img_masked, cv2.COLOR_BGR2LAB)
@@ -112,7 +112,7 @@ class backgroundOverlayer(object):
             if  not cv2.bitwise_and(out_response_view, mask).any():
 
 
-                if np.random.uniform(0, 1, 1)[0] > 1.8:
+                if np.random.uniform(0, 1, 1)[0] > 0.8:
                     blurred_background_img_view = cv2.GaussianBlur(background_img_view, (5, 5), 0)
                     contours, hierarchy = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
                     tmp_mask = np.zeros(background_img_view.shape, dtype = np.uint8)
