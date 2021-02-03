@@ -19,7 +19,7 @@ class DirDataset(Dataset):
         #self.img_dir = './dataset/try/ssimg'
         #self.label_dir = './dataset/try/simg'
         self.scale = scale
-        self.label_side = 224
+        self.label_side = 24
 
 
 
@@ -52,6 +52,7 @@ class DirDataset(Dataset):
         side_diff = self.label_side - label.shape[0]
 
         pad_width = (random.randint(0, side_diff), random.randint(0, side_diff))
+        pad_width = (0, 0)
         pad = ((pad_width[0], side_diff- pad_width[0]), (pad_width[1], side_diff-pad_width[1]))
 
         label = np.pad(label, pad, "constant", constant_values = 0)  # effectively zero padding

@@ -105,7 +105,7 @@ class ScaleAugmentation(object):
     def __init__(self,
                  scalex_lim=(1., 1.),
                  scaley_lim=(1., 1.),
-                 prob=0.0,
+                 prob=0.9,
                  debug=False):
         '''
         :param scalex_lim_deg: tuple(float, float) range of ratio of final tag's \

@@ -41,7 +41,7 @@ class AprilTagGenerator(object):
 
         # Warped April Tag image and its normalized uv corners.
         dst_image,  dst_corners_uv = self.rotate3d(src_image, src_corners_uv)
-        #dst_image, dst_corners_uv = self.scale(dst_image, dst_corners_uv)
+        dst_image, dst_corners_uv = self.scale(dst_image, dst_corners_uv)
 
         dst_height, dst_width = dst_image.shape[:2]
 

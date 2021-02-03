@@ -19,7 +19,7 @@ from torchvision import transforms, datasets, models
 import torchvision
 
 def loss_bit(input, target):
-    return ((nn.Sigmoid()(input)>0.5).long()!=target.long()).reshape(16, -1).sum(dim = 1)
+    return ((nn.Sigmoid()(input)>0.5).long()!=target.long()).reshape(16, -1).sum()
 lis = []
 
 
@@ -99,57 +99,31 @@ class Resnet(pl.LightningModule):
     def __init__(self, hparams):
         super(Resnet, self).__init__()
         self.hparams = hparams
-
-        num_layers = 5
-        features_start = 64
-        num_classes = 1
-
-        self.num_layers = 5
-        self.features_start = 64
-        self.num_classes = 1
-
-        bilinear = False
-        self.bilinear = False
-        self.loss_func = nn.BCEWithLogitsLoss(pos_weight=torch.Tensor([100.0]))
+        self.model_ft = models.resnet50()
+        self.num_ftrs = self.model_ft.fc.in_features
 
 
-        layers = [DoubleConv(4, features_start)]
+        self.loss_func = nn.BCEWithLogitsLoss(pos_weight=torch.Tensor([10.0]))
+        self.H = 24
 
-        feats = features_start
-        for _ in range(num_layers - 1):
-            layers.append(Down(feats, feats * 2))
-            feats *= 2
+        self.model_ft.fc = nn.Linear(self.num_ftrs, self.H * self.H)
 
-        for _ in range(num_layers - 1):
-            layers.append(Up(feats, feats // 2, bilinear))
-            feats //= 2
-
-
-        layers.append(nn.Conv2d(feats, int(num_classes), kernel_size=1))
-
-        self.layers_segmentation = nn.ModuleList(copy.deepcopy(layers))
-
+        self.model_ft_2 = nn.Sequential(
+                nn.Linear(500, self.H * self.H),
+        )
 
     def forward(self, input):
         img, bytecode = input
-        bytecode = bytecode.unsqueeze(1)
-        x = torch.cat((img, bytecode), 1)
+        # hidden = self.model_ft(img)
+        # hidden = hidden.reshape(-1, 500)
+
+        # concated_hidden = torch.cat((nn.Sigmoid()(hidden), bytecode.reshape(-1, self.H * self.H)), dim = 1)
+
+        hidden = self.model_ft(img)
+        hidden = hidden.reshape(-1, self.H, self.H)
 
 
-        xi = [self.layers_segmentation[0](x)]
-
-        # Down path
-        for layer_seg in self.layers_segmentation[1:self.num_layers]:
-            xi.append(layer_seg(xi[-1]))
-        # Up path
-        for i, layer_seg in enumerate(self.layers_segmentation[self.num_layers:-1]):
-            xi.append( layer_seg(xi[-1], xi[-2 - 2*i]))
-
-        return self.layers_segmentation[-1](xi[-1]).squeeze(1)
-
-
-
-
+        return hidden
 
     def training_step(self, batch, batch_nb):
         x, y = batch
@@ -158,11 +132,14 @@ class Resnet(pl.LightningModule):
 
         loss = self.loss_func(y_hat, y)
 
-        # bb = loss_bit(y_hat,y)
+        bb = loss_bit(y_hat,y)
         # with open("out.csv", "a") as f:
         #     for x in bb:
         #         f.write(str(x.item()) + '\n')
 
+
+
+        self.log('bit', bb, on_step=True, on_epoch=False, prog_bar=True)
 
         return {'loss': loss}
 
@@ -182,7 +159,7 @@ class Resnet(pl.LightningModule):
         return {'val_loss': avg_loss, 'log': tensorboard_logs}
 
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.parameters(), lr=8e-3)
+        optimizer = torch.optim.Adam(self.parameters(), lr=8e-4)
         return [optimizer]
 
     def __dataloader(self):
@@ -197,9 +174,7 @@ class Resnet(pl.LightningModule):
         val_loader = DataLoader(val_ds, batch_size=16,num_workers=12, pin_memory=True, shuffle=False,drop_last=True)
 
         return {
-            'train': train_loader,
-            'val': val_loader,
-        }
+            'train': train_loader, 'val': val_loader, }
 
     def train_dataloader(self):
         return self.__dataloader()['train']

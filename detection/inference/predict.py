@@ -247,7 +247,7 @@ def reduce_to_tags(net, img, response_1, response_2,  args):
         cv2.imshow('unrotated_tag', im1Reg)
 
         cv2.namedWindow('decoded_tag', cv2.WINDOW_NORMAL)
-        cv2.imshow('decoded_tag', (nn.Sigmoid()(out)>0.99).reshape(-1).reshape(224,224).cpu().numpy().astype(np.float32).transpose())
+        cv2.imshow('decoded_tag', (nn.Sigmoid()(out)>0.5).reshape(-1).reshape(24,24).cpu().numpy().astype(np.float32).transpose())
         cv2.waitKey(cv_time_wait)
 
         rotation = 0

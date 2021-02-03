@@ -1,8 +1,8 @@
-#!/bin/sh 
+#!/bin/sh
 #SBATCH --job-name=apriltag_generator
-# Job name 
+# Job name
 #SBATCH --ntasks=1
-# Run on a single CPU 
+# Run on a single CPU
 #SBATCH --time=01:20:00
 # Time limit hrs:min:sec
 #SBATCH --output=tf_test_%j.out
@@ -38,7 +38,7 @@ nvidia-smi
 #nvidia-docker run  --rm  -v /raid//apant_ma/:/raid/apant_ma pytorchlightning-mod/pytorch-lightning:base-conda-py3.8-torch1.7 python -c "import shutil;shutil.rmtree('/raid/apant_ma/AprilTag-Detection/AprilTag_Detection/DatasetGeneration/out')"
 
 
-nvidia-docker run  --ipc=host -t ${USER_TTY} --name $SLURM_JOB_ID --user $(id -u):$(id -g)  --rm -v /raid//apant_ma/:/raid/apant_ma pytorchlightning-mod/pytorch-lightning:base-conda-py3.8-torch1.8 python /raid/apant_ma/AprilTag-Detection/AprilTag_Detection/DatasetGeneration/merge_with_image.py 
+nvidia-docker run  --ipc=host -t ${USER_TTY} --name $SLURM_JOB_ID --user $(id -u):$(id -g)  --rm -v /raid//apant_ma/:/raid/apant_ma pytorchlightning-mod/pytorch-lightning:base-conda-py3.8-torch1.8 python /raid/apant_ma/AprilTag-Detection/AprilTag_Detection/DatasetGeneration/merge_with_image.py
 
 
 docker container ls

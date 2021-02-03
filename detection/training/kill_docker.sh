@@ -1,9 +1,9 @@
-#!/bin/sh 
+#!/bin/sh
 #SBATCH --job-name=tf_job_test
-# Job name 
+# Job name
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-# Run on a single CPU 
+# Run on a single CPU
 #SBATCH --time=00:01:00
 # Time limit hrs:min:sec
 #SBATCH --output=tf_test_%j.out
@@ -39,10 +39,8 @@ echo $CUDA_VISIBLE_DEVICES
 
 docker container ls
 nvidia-smi
-docker kill 66c7b9e2c0a1
+docker kill 1bebf6948f40
 #top
 docker rm $(docker stop $(docker ps -a -q --filter ancestor=pytorchlightning-mod/pytorch-lightning:base-conda-py3.8-torch1.7-train --format="{{.ID}}"))
 docker container ls
 nvidia-smi
-
-
