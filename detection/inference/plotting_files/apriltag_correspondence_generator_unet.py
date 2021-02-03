@@ -13,6 +13,9 @@ import AprilTagHelper
 
 
 def process(args):
+
+    files_list = sorted(glob.glob(os.path.join("../img/Calibrate_5x5_12", '*.jpg')))
+
     with open(args.input_pkl, "rb") as f:
         params = pickle.load(f);
 
@@ -20,8 +23,8 @@ def process(args):
 
 
 
-    markerLength = 0.8 # Here, measurement unit is centimetre.
-    markerSeparation = 0.3   # Here, measurement unit is centimetre.
+    markerLength = 2.4 # Here, measurement unit is centimetre.
+    markerSeparation = 1.2   # Here, measurement unit is centimetre.
 
     dictionary = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_APRILTAG_36h11)
 
@@ -53,10 +56,10 @@ def process(args):
     corners = corner
 
 
-    if(args.visualize):
-        plotter = AprilTagHelper.AprilTagPlotter()
-        plotter(objPoints, extracted_ids)
-        plotter(corners ,extracted_ids)
+    # if(args.visualize):
+    #     plotter = AprilTagHelper.AprilTagPlotter()
+    #     plotter(corners ,extracted_ids)
+    #     plotter(objPoints, extracted_ids)
 
     with open("./outputs/unet_detections.pkl","wb") as f:
         pickle.dump((corners, objPoints, gray_shape), f)
@@ -69,21 +72,21 @@ def process(args):
     print(distCoeffs)
     print(perViewErrors)
 
-    # if(args.visualize):
+    if(args.visualize):
 
-    #     cv2.namedWindow("image", cv2.WINDOW_NORMAL)
-    #     for ind, file_name in enumerate(tqdm(files_list)):
-    #         image = cv2.imread(file_name)
+        cv2.namedWindow("image", cv2.WINDOW_NORMAL)
+        for ind, file_name in enumerate(tqdm(files_list)):
+            image = cv2.resize(cv2.imread(file_name), (1024, 1024))
 
-    #         imagePoints, jacobian	=	cv2.projectPoints(	objPoints[ind], rvecs[ind], tvecs[ind], cameraMatrix, distCoeffs)
-    #         print(imagePoints)
-    #         for point in imagePoints:
-    #             print(point)
-    #             cv2.circle(image,tuple(point[0]), 3, (0,0,255), -1)
+            imagePoints, jacobian	=	cv2.projectPoints(	objPoints[ind], rvecs[ind], tvecs[ind], cameraMatrix, distCoeffs)
+            print(imagePoints)
+            for point in imagePoints:
+                print(point)
+                cv2.circle(image,tuple(point[0]), 3, (0,0,255), -1)
 
 
-    #         cv2.imshow("image", image)
-    #         cv2.waitKey(0)
+            cv2.imshow("image", image)
+            cv2.waitKey(0)
 
 
 

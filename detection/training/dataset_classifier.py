@@ -19,7 +19,7 @@ class DirDataset(Dataset):
         #self.img_dir = './dataset/try/ssimg'
         #self.label_dir = './dataset/try/simg'
         self.scale = scale
-        self.label_side = 10
+        self.label_side = 224
 
 
 
@@ -75,7 +75,7 @@ class DirDataset(Dataset):
             label, bytecode = pickle.load(f)
         label, bytecode = self.randomPad(label, bytecode)
 
-        # with open("bytecode_16h5.pkl","wb") as f:
+        # with open("bytecode_36h11.pkl","wb") as f:
         #     pickle.dump(bytecode, f)
         # assert(False)
         # cv2.namedWindow("img"+str(idx), cv2.WINDOW_NORMAL)

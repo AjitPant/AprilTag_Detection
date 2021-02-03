@@ -72,7 +72,10 @@ if __name__ == '__main__':
             mtx= np.array(params[1])
             fx_extracted.append(mtx[0][0])
 
+        min_x_data_value =0
+        max_x_data_value =3000
         plt.hist(fx_extracted, density=True, bins=100)  # `density=False` would make counts
+        plt.xlim(min_x_data_value,max_x_data_value)
         plt.ylabel('Probability')
         plt.xlabel('Data');
         plt.savefig('./outputs/classic_'+str(number_of_subsets)+'_'  + str(number_of_elem_in_subset) +'_fx_april_350_' + str(2.4) + '.png')
@@ -88,6 +91,7 @@ if __name__ == '__main__':
             fy_extracted.append(mtx[1][1])
 
         plt.hist(fy_extracted, density=True, bins=100)  # `density=False` would make counts
+        plt.xlim(min_x_data_value,max_x_data_value)
         plt.ylabel('Probability')
         plt.xlabel('Data');
         plt.savefig('./outputs/classic_'+str(number_of_subsets)+'_'  + str(number_of_elem_in_subset) +'_fy_april_350_' + str(2.4) + '.png')
@@ -103,6 +107,7 @@ if __name__ == '__main__':
             cx_extracted.append(mtx[0][2])
 
         plt.hist(cx_extracted, density=True, bins=100)  # `density=False` would make counts
+        plt.xlim(min_x_data_value,max_x_data_value)
         plt.ylabel('Probability')
         plt.xlabel('Data');
         plt.savefig('./outputs/classic_'+str(number_of_subsets)+'_'  + str(number_of_elem_in_subset) +'_cx_april_350_'+ str(2.4) + '.png')
@@ -118,6 +123,7 @@ if __name__ == '__main__':
             cy_extracted.append(mtx[1][2])
 
         plt.hist(cy_extracted, density=True, bins=100)  # `density=False` would make counts
+        plt.xlim(min_x_data_value,max_x_data_value)
         plt.ylabel('Probability')
         plt.xlabel('Data');
         plt.savefig('./outputs/classic_'+str(number_of_subsets)+'_'  + str(number_of_elem_in_subset) +'_cy_april_350_'+ str(2.4) + '.png')

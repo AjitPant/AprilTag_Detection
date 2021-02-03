@@ -36,13 +36,13 @@ def main(hparams):
 
 
     trainer = Trainer(
-        gpus=2,
+        gpus=1,
         accelerator = 'ddp',
         checkpoint_callback=checkpoint_callback,
         accumulate_grad_batches=1,
         resume_from_checkpoint=hparams.checkpoint,
         benchmark=True,
-       default_root_dir='/raid/apant_ma/AprilTag-Detection/AprilTag_Detection/detection/training/lightning_logs',
+    #    default_root_dir='/raid/apant_ma/AprilTag-Detection/AprilTag_Detection/detection/training/lightning_logs',
 
     )
 

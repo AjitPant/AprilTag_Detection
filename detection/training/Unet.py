@@ -191,9 +191,9 @@ class Unet(LightningModule):
         self.num_layers = num_layers
 
 
-        layers = [DoubleConv(3, 2)]
+        layers = [DoubleConv(3, 8)]
 
-        feats = 2
+        feats = 8
         for _ in range(num_layers - 1):
             layers.append(Down(feats, feats * 2))
             feats *= 2

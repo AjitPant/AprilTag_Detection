@@ -14,7 +14,7 @@ import AprilTagHelper
 
 def process(args):
 
-    files_list = glob.glob(os.path.join(args.image_dir, '*.jpg'))
+    files_list = sorted(glob.glob(os.path.join(args.image_dir, '*.jpg')))[:100]
     print("Found {} files in {}".format(len(files_list),args.image_dir))
 
     dictionary = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_APRILTAG_36h11)
@@ -54,8 +54,8 @@ def process(args):
     if(args.visualize):
         cv2.destroyAllWindows()
 
-    markerLength = 0.8 # Here, measurement unit is centimetre.
-    markerSeparation = 0.3   # Here, measurement unit is centimetre.
+    markerLength = 2.4# Here, measurement unit is centimetre.
+    markerSeparation = 1.2   # Here, measurement unit is centimetre.
 
     board = cv2.aruco.GridBoard_create(5, 5, markerLength, markerSeparation, dictionary, firstMarker = 300)
 
@@ -104,6 +104,7 @@ def process(args):
         cv2.namedWindow("image", cv2.WINDOW_NORMAL)
         for ind, file_name in enumerate(tqdm(files_list)):
             image = cv2.imread(file_name)
+            image = cv2.resize(image, (1024,1024))
 
             imagePoints, jacobian	=	cv2.projectPoints(	objPoints[ind], rvecs[ind], tvecs[ind], cameraMatrix, distCoeffs)
             print(imagePoints)

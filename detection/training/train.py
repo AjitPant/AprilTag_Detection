@@ -16,7 +16,7 @@ import torch.nn as nn
 def main(hparams):
     print(hparams.dataset)
     model = Unet(hparams)
-    model = Unet.load_from_checkpoint(hparams.checkpoint,dataset = hparams.dataset, learning_rate = hparams.learning_rate)
+    # model = Unet.load_from_checkpoint(hparams.checkpoint,dataset = hparams.dataset, learning_rate = hparams.learning_rate)
 #    model.loss_func2 = nn.BCEWithLogitsLoss(pos_weight=torch.Tensor([10.0]))
 
     model.train()
@@ -38,7 +38,7 @@ def main(hparams):
         num_nodes=1,
         max_epochs = 8000,
 #        gradient_clip_val = 0.5,
-        accelerator=hparams.accelerator,
+        # accelerator=hparams.accelerator,
         gpus=hparams.n_gpu,
         checkpoint_callback=checkpoint_callback, \
        # resume_from_checkpoint=hparams.checkpoint,
@@ -46,7 +46,7 @@ def main(hparams):
         sync_batchnorm = True,
         accumulate_grad_batches=1,
        benchmark=True,
-        default_root_dir='/raid/apant_ma/AprilTag-Detection/AprilTag_Detection/detection/training/lightning_logs',
+        # default_root_dir='/raid/apant_ma/AprilTag-Detection/AprilTag_Detection/detection/training/lightning_logs',
     )
 
 

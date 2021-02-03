@@ -22,7 +22,7 @@ import operator
 import math
 from functools import reduce
 
-cv_time_wait = 0
+cv_time_wait = 1
 
 inf_ind = 0
 class_ind = 0
@@ -47,14 +47,15 @@ def reduce_to_tags(net, img, response_1, response_2,  args):
 
 
     mask_segmentation = response_1
-    mask_segmentation[:] = 255
+    # mask_segmentation[:] = 255
     mask_corners = response_2
     segregates = []
 
 
     mask_corners =  ((mask_corners*255))
 
-    mask_corners[mask_corners < 10] = 0
+    mask_corners[mask_corners < 40] = 0
+    mask_corners[mask_corners >255 ] = 255
 
     print(np.unique(mask_corners))
 
@@ -174,6 +175,11 @@ def reduce_to_tags(net, img, response_1, response_2,  args):
             cX = (M["m10"] / (M["m00"]+1e-18))
             cY = (M["m01"] / (M["m00"]+1e-18))
 
+
+
+            # if(cX>=500 or cY >=500):
+            #     continue
+
             segregates.append([cX, cY])
 
 
@@ -231,9 +237,9 @@ def reduce_to_tags(net, img, response_1, response_2,  args):
 
         ds = dataset_classifier.DirDataset('', '')
         im2Reg = (ds.preprocess(im2Reg))
-        with open("bytecode_36h11.pkl", "rb") as f:
+        with open("bytecode_36h11-224.pkl", "rb") as f:
             bytecode_36h11 = pickle.load(f)
-        out = net((im2Reg.unsqueeze(0).to(device), torch.tensor(bytecode_36h11).to(device)))
+        out = net((im2Reg.unsqueeze(0).to(device), torch.tensor(bytecode_36h11).to(device).unsqueeze(0)))
 
 
 
@@ -241,7 +247,7 @@ def reduce_to_tags(net, img, response_1, response_2,  args):
         cv2.imshow('unrotated_tag', im1Reg)
 
         cv2.namedWindow('decoded_tag', cv2.WINDOW_NORMAL)
-        cv2.imshow('decoded_tag', (nn.Sigmoid()(out)>0.99).reshape(-1).reshape(10,10).cpu().numpy().astype(np.float32).transpose())
+        cv2.imshow('decoded_tag', (nn.Sigmoid()(out)>0.99).reshape(-1).reshape(224,224).cpu().numpy().astype(np.float32).transpose())
         cv2.waitKey(cv_time_wait)
 
         rotation = 0
@@ -326,7 +332,7 @@ def reduce_to_tags(net, img, response_1, response_2,  args):
     return return_list_corner_id, detected
 
 
-def predict(net, img, device='cuda', threshold=0.5, kernel =1024//2, stride =1024//2):
+def predict(net, img, device='cuda', threshold=0.99, kernel =1024, stride =512):
     with torch.no_grad():
         ds = DirDataset('', '')
         _img = (ds.preprocess(img))
@@ -365,12 +371,15 @@ def predict(net, img, device='cuda', threshold=0.5, kernel =1024//2, stride =102
 
 
                     probs = o
-                    # probs = torch.sigmoid(o)
+
+                    print(probs[:,1])
+
+                    probs[:,1] = torch.sigmoid(o[:,1])
 
                     probs = probs.squeeze(0)
                     mask_patch = probs
 
-                    mask[start_row:start_row+kernel, start_col:start_col+kernel] = torch.max(mask[start_row:start_row+kernel, start_col:start_col+kernel], mask_patch[:, :patch_height, :patch_width])
+                    mask[:,start_row:start_row+kernel, start_col:start_col+kernel] = torch.max(mask[:,start_row:start_row+kernel, start_col:start_col+kernel], mask_patch[:, :patch_height, :patch_width])
 
         mask_ret= mask.cpu().numpy()
         return (mask_ret[0],mask_ret[1] > threshold )
@@ -411,13 +420,13 @@ def main(args):
         net_bytecode = Resnet.load_from_checkpoint(args.checkpoint_bit)
         net_bytecode.freeze()
         net_bytecode.to(args.device)
-        net_bytecode.eval()
-
-        img_list = sorted([str(item) for item in glob.glob(args.img + "*.jpg")])[:10]
+        img_list = sorted([str(item) for item in glob.glob(args.img + "*.jpg")])[:100]
         pkl_list = sorted([str(item) for item in glob.glob(args.img + "*.pkl")])[:10]
 
-        for img_str, pkl_str in zip(img_list, pkl_list):
-            im_size = 1024//2
+        # pkl_list = img_list
+
+        im_size = 2048
+        for img_str, pkl_str in zip(img_list, img_list):
             img = Image.open(img_str).convert('RGB')
             ind = img_str[-7:-4]
 
@@ -445,36 +454,38 @@ def main(args):
             corners_with_id, detected = return_corner_coords_with_id(img, net_unet, net_bytecode, args)
             corners = corners_with_id[:4]
 
-            corners_pkl = []
-            with open(pkl_str, "rb") as f:
-                corners_pkl = np.array(pickle.load(f)).reshape((-1,2)).tolist()
-            print(corners)
-            print(corners_pkl)
-            dst_sm = 0.00
-            if(detected):
+            # corners_pkl = []
+            # with open(pkl_str, "rb") as f:
+            #     corners_pkl = np.array(pickle.load(f)).reshape((-1,2)).tolist()
+            # print(corners)
+            # print(corners_pkl)
+            # dst_sm = 0.00
+            # if(detected):
+            #     for j in corners:
+            #         for c in j[:4]:
+            #             mn = (1000000000000, (0,0))
+            #             for ic in corners_pkl:
+            #                 print(c, ic)
+            #                 diff = 0.0
+            #                 mn = min(mn, ((ic[0]/2 - c[0] -diff  )* (ic[0]/2 - c[0] -diff ) + (ic[1]/2 - c[1] -diff )* (ic[1]/2 - c[1]  -diff), (ic[0]/2 -c[0] , ic[1]/2 - c[1]) ))
+            #                 mn = min(mn, ((ic[0]/4 - c[0] -diff  )* (ic[0]/4 - c[0] -diff ) + (ic[1]/4 - c[1] -diff )* (ic[1]/4 - c[1]  -diff), (ic[0]/4 -c[0] , ic[1]/4 - c[1]) ))
+            #                 # mn = min(mn, ((ic[0]/8 - c[0] -diff  )* (ic[0]/8 - c[0] -diff ) + (ic[1]/8 - c[1] -diff )* (ic[1]/8 - c[1]  -diff), (ic[0]/8 -c[0] , ic[1]/8 - c[1]) ))
+            #                 mn = min(mn, ((ic[0] - c[0] -diff  )* (ic[0] - c[0] -diff  ) + (ic[1] - c[1] -diff )* (ic[1] - c[1]-diff ), (ic[0]/2 -c[0] , ic[1]/2 - c[1]) ))
 
-                for c in corners[0][:4]:
-                    mn = (1000000000000, (0,0))
-                    for ic in corners_pkl:
-                        print(c, ic)
-                        diff = 0.0
-                        mn = min(mn, ((ic[0]/2 - c[0] -diff  )* (ic[0]/2 - c[0] -diff ) + (ic[1]/2 - c[1] -diff )* (ic[1]/2 - c[1]  -diff), (ic[0]/2 -c[0] , ic[1]/2 - c[1]) ))
-                        mn = min(mn, ((ic[0]/4 - c[0] -diff  )* (ic[0]/4 - c[0] -diff ) + (ic[1]/4 - c[1] -diff )* (ic[1]/4 - c[1]  -diff), (ic[0]/4 -c[0] , ic[1]/4 - c[1]) ))
-                        # mn = min(mn, ((ic[0]/8 - c[0] -diff  )* (ic[0]/8 - c[0] -diff ) + (ic[1]/8 - c[1] -diff )* (ic[1]/8 - c[1]  -diff), (ic[0]/8 -c[0] , ic[1]/8 - c[1]) ))
-                        mn = min(mn, ((ic[0] - c[0] -diff  )* (ic[0] - c[0] -diff  ) + (ic[1] - c[1] -diff )* (ic[1] - c[1]-diff ), (ic[0]/2 -c[0] , ic[1]/2 - c[1]) ))
+            #             dst_sm += math.sqrt(mn[0])
+            #             # with open("file_corners_unet_diff.csv", "a") as f:
+            #             #      f.write(str(ind)+","+ str(mn[1][0]) + ","+str(mn[1][1]) + " \n")
 
-                    dst_sm += math.sqrt(mn[0])
-                    # with open("file_corners_unet_diff.csv", "a") as f:
-                    #      f.write(str(ind)+","+ str(mn[1][0]) + ","+str(mn[1][1]) + " \n")
-
-                dst_sm /= 4
-                print(dst_sm)
-                # with open("file_corners_unet.csv", "a") as f:
-                #      f.write(str(ind)+","+ str(dst_sm) + " \n")
+            #     dst_sm /= 4
+            #     if(len(corners)):
+            #         dst_sm /= len(corners)
+            #     print(dst_sm)
+            #     # with open("file_corners_unet.csv", "a") as f:
+            #     #      f.write(str(ind)+","+ str(dst_sm) + " \n")
 
 
     with open('outputs/unet_corner_direct.pkl', "wb") as f:
-        pickle.dump((global_output_corners, global_output_id, global_output_cnter, (1024,1024)), f)
+        pickle.dump((global_output_corners, global_output_id, global_output_cnter, (im_size,im_size)), f)
 
 
 

@@ -7,7 +7,7 @@ import copy
 import argparse
 import cv2
 import numpy as np
-from apriltag_images import TAG36h11,TAG41h12, AprilTagImages
+from apriltag_images import TAG36h11,TAG41h12,TAG400h1,  AprilTagImages
 from apriltag_generator import AprilTagGenerator
 from backgound_overlayer import backgroundOverlayer
 
@@ -72,7 +72,7 @@ def augment_and_save(file, overlayer, args):
                 print("Failed to load the {}. Make sure it exists.", path)
                 exit()
 
-            img = cv2.resize(img, (512*2*8, 512*2*8))
+            img = cv2.resize(img, (512*2, 512*2))
             img_out, response_1, response_2, response_3 ,response_id, corners_collection,bytecode_collection, familycode_collection= overlayer(img)
 
             img_out = cv2.resize(img_out, (1024, 1024), interpolation = cv2.INTER_AREA)
@@ -81,9 +81,9 @@ def augment_and_save(file, overlayer, args):
 
 
 
-            corners_collection = [ [x/8 for x in y ]  for y in corners_collection]
+            corners_collection = [ [x/1 for x in y ]  for y in corners_collection]
 
-#            reduce_to_tags(img_out, corners_collection,bytecode_collection,familycode_collection, filename, args)
+            reduce_to_tags(img_out, corners_collection,bytecode_collection,familycode_collection, filename, args)
 
             cv2.imwrite(os.path.join(args.out_folder, 'img',
                                      filename[:-4] + "_" + str(j) + '.jpg'), img_out)
@@ -122,12 +122,12 @@ def app():
     parser.add_argument(
         '--family',
         type=str,
-        default=TAG36h11,
+        default=TAG400h1,
         help='April tag family.')
     parser.add_argument(
         '--size',
         type=int,
-        default=320 * 4,
+        default=320 * 1,
         help='Size of April tag images in pixels.')
     parser.add_argument(
        '--mx_tags',
